@@ -1,60 +1,68 @@
+from des import Mixer, Round
 from des.PBox import PBox
-from des.Mixer import Mixer
-from des.Round import Round
-from des.utils import *
+from des.utils import left_circ_shift
 
 
 class DES:
-    def __init__(self, key: int):
-        self.key = int_to_bin(key, block_size=64)
+    def __init__(self, key: str):
+        # Convert hex key to binary
+        self.key = self.hex_to_bin(key)
         self.PC_1 = PBox.des_key_initial_permutation()
         self.PC_2 = PBox.des_shifted_key_permutation()
         self.P_i = PBox.des_initial_permutation()
         self.P_f = PBox.des_final_permutation()
         self.single_shift = {1, 2, 9, 16}
-        self.rounds = self.generate_rounds()
+        self.rounds, self.key_expansions = self.generate_rounds()
 
-    def encrypt(self, binary: str) -> str:
+    def hex_to_bin(self, hex_str):
+        return bin(int(hex_str, 16))[2:].zfill(64)
+
+    def bin_to_hex(self, bin_str):
+        return hex(int(bin_str, 2))[2:].upper()
+
+    def encrypt(self, hex_input: str) -> str:
+        binary = self.hex_to_bin(hex_input)
         binary = self.P_i.permutate(binary)
+        round_results = []
+
         for round in self.rounds:
-            binary = round.encrypt(binary)
-        return self.P_f.permutate(binary)
+            binary, round_result = round.encrypt(binary)
+            round_results.append(self.bin_to_hex(round_result))  # Convert round result to hex
 
-    def decrypt(self, binary: str) -> str:
+        encrypted_binary = self.P_f.permutate(binary)
+        return self.bin_to_hex(encrypted_binary), round_results, self.key_expansions
+
+
+    def decrypt(self, hex_input: str) -> str:
+        binary = self.hex_to_bin(hex_input)
         binary = self.P_f.invert().permutate(binary)
-        for round in self.rounds[::-1]:
-            binary = round.decrypt(binary)
-        return self.P_i.invert().permutate(binary)
+        round_results = []
 
-    def encrypt_number(self, number: int) -> int:
-        binary = int_to_bin(number, block_size=64)
-        return int(self.encrypt(binary), base=2)
+        for round in self.rounds[::-1]:  # Reverse order for decryption
+            binary, round_result = round.decrypt(binary)
+            round_results.append(self.bin_to_hex(round_result))  # Convert round result to hex
 
-    def decrypt_number(self, number: int) -> int:
-        binary = int_to_bin(number, block_size=64)
-        return int(self.decrypt(binary), base=2)
+        decrypted_binary = self.P_i.invert().permutate(binary)
+        return self.bin_to_hex(decrypted_binary), round_results, self.key_expansions
 
-    def encrypt_message(self, plaintext: str) -> list:
-        result = [0] * len(plaintext)
-        for index, letter in enumerate(plaintext.lower()):
-            result[index] = int(self.encrypt(int_to_bin(ord(letter), block_size=64)), base=2)
-        return result
 
-    def decrypt_message(self, ciphertext_stream: list) -> str:
-        return ''.join(map(chr, self.plaintext_stream(ciphertext_stream)))
-
-    def plaintext_stream(self, ciphertext_stream: list) -> list:
-        return [int(self.decrypt(int_to_bin(number, block_size=64)), base=2) for number in ciphertext_stream]
-
-    def generate_rounds(self) -> list:
+    def generate_rounds(self):
         rounds = []
+        key_expansions = []
+
         self.key = self.PC_1.permutate(self.key)
-        l, r = self.key[0: 32], self.key[32:]
+        l, r = self.key[:32], self.key[32:]
+
         for i in range(1, 17):
             shift = 1 if i in self.single_shift else 2
             l, r = left_circ_shift(l, shift), left_circ_shift(r, shift)
             key = int(self.PC_2.permutate(l + r), base=2)
+            expanded_key = self.bin_to_hex(l + r)
+
             mixer = Mixer.des_mixer(key)
             cipher = Round.with_swapper(mixer) if i != 16 else Round.without_swapper(mixer)
+
             rounds.append(cipher)
-        return rounds
+            key_expansions.append(expanded_key)
+
+        return rounds, key_expansions

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DES Encryption App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .result {
+            font-weight: bold;
+            margin-top: 10px;
+            word-wrap: break-word;
+            white-space: normal;
+            overflow-wrap: break-word;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>DES Encryption & Decryption</h2>
+
+    <div class="container">
+        <h3>Encrypt/Decrypt Hexadecimal</h3>
+
+        <label for="hexMessage">Enter Hexadecimal Message (64-bit):</label>
+        <input type="text" id="hexMessage" placeholder="Enter hex message (64-bit)">
+        <p class="error" id="hexMessageError"></p>
+
+        <label for="hexKey">Enter Hexadecimal Key (64-bit):</label>
+        <input type="text" id="hexKey" placeholder="Enter hex key (64-bit)">
+        <p class="error" id="hexKeyError"></p>
+
+        <button onclick="encryptHex()">Encrypt</button>
+        <button onclick="decryptHex()">Decrypt</button>
+
+        <p class="result" id="hexResult"></p>
+        <div id="roundResults"></div>
+        <div id="keyExpansions" class="key-expansions"></div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:5000";
+  
+        function clearErrors() {
+            document.getElementById("hexMessageError").innerText = "";
+            document.getElementById("hexKeyError").innerText = "";
+        }
+
+        function validateHexInput(input) {
+            return /^[0-9A-Fa-f]+$/.test(input);  // Check if the input contains only hexadecimal characters
+        }
+
+        async function encryptHex() {
+          clearErrors();
+          let hexMessage = document.getElementById("hexMessage").value.trim();
+          let hexKey = document.getElementById("hexKey").value.trim();
+      
+          // Validate the inputs
+          if (!validateHexInput(hexMessage)) {
+              document.getElementById("hexMessageError").innerText = "Invalid hexadecimal message input";
+              return;
+          }
+          if (!validateHexInput(hexKey)) {
+              document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
+              return;
+          }
+      
+          // Send both message and key to the server
+          let response = await fetch(`${API_URL}/encrypt`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ hex_message: hexMessage, hex_key: hexKey })
+          });
+          let data = await response.json();
+          document.getElementById("hexResult").innerText = "Encrypted: " + data.encrypted;
+          displayRoundResults(data.round_results);
+          displayKeyExpansions(data.key_expansions);
+      }
+      
+      async function decryptHex() {
+          clearErrors();
+          let hexMessage = document.getElementById("hexMessage").value.trim();
+          let hexKey = document.getElementById("hexKey").value.trim();
+      
+          // Validate the inputs
+          if (!validateHexInput(hexMessage)) {
+              document.getElementById("hexMessageError").innerText = "Invalid hexadecimal message input";
+              return;
+          }
+          if (!validateHexInput(hexKey)) {
+              document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
+              return;
+          }
+      
+          // Send both message and key to the server
+          let response = await fetch(`${API_URL}/decrypt`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ hex_message: hexMessage, hex_key: hexKey })
+          });
+          let data = await response.json();
+          document.getElementById("hexResult").innerText = "Decrypted: " + data.decrypted;
+          displayRoundResults(data.round_results);
+          displayKeyExpansions(data.key_expansions);
+      }
+
+        function displayRoundResults(roundResults) {
+            let resultDiv = document.getElementById("roundResults");
+            resultDiv.innerHTML = "<h4>Round Results:</h4>";
+            roundResults.forEach((result, index) => {
+                resultDiv.innerHTML += `<p>Round ${index + 1}: ${result}</p>`;
+            });
+        }
+
+        function displayKeyExpansions(keyExpansions) {
+            let keyDiv = document.getElementById("keyExpansions");
+            keyDiv.innerHTML = "<h4>Key Expansions:</h4>";
+            keyExpansions.forEach((key, index) => {
+                keyDiv.innerHTML += `<p>Round ${index + 1} Key: ${key}</p>`;
+            });
+        }
+    </script>
+  
+</body>
+</html>
