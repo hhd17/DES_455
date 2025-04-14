@@ -1,7 +1,7 @@
 from des import DES
 
-plaintext = '123456'
-des = DES(key='193')
+plaintext = '[$5usnd93e'  # This is equivalent to 48617373616E4461 in HEX
+des = DES(key='9i3jd%j')  # This is equivalent to 5365637265744B65 in HEX
 
 enc_text, enc_round_results, enc_key_expansions = des.encrypt(plaintext)
 dec_text, dec_round_results, dec_key_expansions = des.decrypt(enc_text)
