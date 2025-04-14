@@ -28,6 +28,10 @@ Clone this repository on your machine and enter directory.
 git clone https://github.com/anishLearnsToCode/DES.git
 cd DES
 ```
+Install dependencies from requirements.txt.
+```powershell
+pip install -r requirements.txt
+```
 Run the `driver.py` program to see the output of a number being encrypted and decrypted using
 DES.
 
