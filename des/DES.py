@@ -20,7 +20,7 @@ class DES:
 
     @staticmethod
     def bin_to_hex(bin_str) -> str:
-        return hex(int(bin_str, 2))[2:].upper()
+        return hex(int(bin_str, 2))[2:].upper().zfill(16)
 
     def encrypt(self, hex_input: str) -> tuple[str, list[str], list[str]]:
         binary = self.hex_to_bin(hex_input)
@@ -29,7 +29,7 @@ class DES:
 
         for enc_round in self.rounds:
             binary, round_result = enc_round.encrypt(binary)
-            round_results.append(self.bin_to_hex(round_result))  # Convert round result to hex
+            round_results.append(self.bin_to_hex(round_result).zfill(8))  # Convert round result to hex
 
         encrypted_binary = self.P_f.permutate(binary)
         return self.bin_to_hex(encrypted_binary), round_results, self.key_expansions
@@ -41,7 +41,7 @@ class DES:
 
         for dec_round in self.rounds[::-1]:  # Reverse order for decryption
             binary, round_result = dec_round.decrypt(binary)
-            round_results.append(self.bin_to_hex(round_result))  # Convert round result to hex
+            round_results.append(self.bin_to_hex(round_result).zfill(8))  # Convert round result to hex
 
         decrypted_binary = self.P_i.invert().permutate(binary)
         return self.bin_to_hex(decrypted_binary), round_results, self.key_expansions
@@ -51,7 +51,7 @@ class DES:
         key_expansions = []
 
         self.key = self.PC_1.permutate(self.key)
-        l, r = self.key[:32], self.key[32:]
+        l, r = self.key[:28], self.key[28:]
 
         for i in range(1, 17):
             shift = 1 if i in self.single_shift else 2

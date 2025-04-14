@@ -5,7 +5,7 @@ from des.utils import int_to_bin
 
 class Mixer:
     def __init__(
-            self, key: int, func=lambda a, b: a % b, block_size=64, initial_permutation=None, final_permutation=None,
+            self, key: int, func=lambda a, b: a ^ b, block_size=64, initial_permutation=None, final_permutation=None,
             substitutions=None, substitution_block_size=6
     ):
         self.func = func
@@ -26,7 +26,7 @@ class Mixer:
             block = r2[i * self.substitution_block_size: (i + 1) * self.substitution_block_size]
             substitution_result = self.substitutions[i](block)
             if not isinstance(substitution_result, str):
-                substitution_result = bin(substitution_result)[2:].zfill(self.substitution_block_size)
+                substitution_result = bin(substitution_result)[2:].zfill(4)
             r3 += substitution_result
 
         r3 = self.final_permutation.permutate(r3)
@@ -46,5 +46,5 @@ class Mixer:
             key=key,
             initial_permutation=PBox.des_single_round_expansion(),
             final_permutation=PBox.des_single_round_final(),
-            func=lambda a, b: a % b
+            func=lambda a, b: a ^ b
         )
