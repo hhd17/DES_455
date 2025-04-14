@@ -1,3 +1,5 @@
+# DO NOT CHANGE THE ORDER OF THESE IMPORTS!
+
 from des.NoneSwapper import NoneSwapper
 from des.Swapper import Swapper
 from des.Round import Round

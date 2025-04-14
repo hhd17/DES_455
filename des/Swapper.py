@@ -1,5 +1,5 @@
 class Swapper:
-    def __init__(self, block_size=64):
+    def __init__(self, block_size=64) -> None:
         self.block_size = block_size
 
     def encrypt(self, binary: str) -> str:

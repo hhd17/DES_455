@@ -1,6 +1,8 @@
 class NoneSwapper:
-    def encrypt(self, binary: str) -> str:
+    @staticmethod
+    def encrypt(binary: str) -> str:
         return binary
 
-    def decrypt(self, binary: str) -> str:
+    @staticmethod
+    def decrypt(binary: str) -> str:
         return binary

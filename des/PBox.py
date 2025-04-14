@@ -10,10 +10,12 @@ class PBox:
     def permutate(self, sequence: list) -> str:
         result = [0] * self.out_degree
         for index, value in enumerate(sequence):
-            if (index + 1) in self.key:
-                indices = self.key.get(index + 1, [])
-                indices = indices if isinstance(indices, list) else [indices]
-                for i in indices:
+            indices = self.key.get(index + 1, [])
+            # Ensure it's a list
+            if not isinstance(indices, list):
+                indices = [indices]
+            for i in indices:
+                if isinstance(i, int):  # Ensure i is an int
                     result[i - 1] = value
         return ''.join(map(str, result))
 

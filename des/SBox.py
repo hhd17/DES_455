@@ -17,14 +17,14 @@ class SBox:
 
     @staticmethod
     def des_single_round_substitutions():
-        return [SBox.forDESSubstitution(block) for block in range(1, 9)]
+        return [SBox.for_des_substitution(block) for block in range(1, 9)]
 
     @staticmethod
     def identity():
         return SBox(func=lambda binary: ('0', '0'), table={})
 
     @staticmethod
-    def forDESSubstitution(block):
+    def for_des_substitution(block):
         if block == 1: return SBox.des_s_box1()
         if block == 2: return SBox.des_s_box2()
         if block == 3: return SBox.des_s_box3()

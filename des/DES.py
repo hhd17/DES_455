@@ -4,7 +4,7 @@ from des.utils import left_circ_shift
 
 
 class DES:
-    def __init__(self, key: str):
+    def __init__(self, key: str) -> None:
         # Convert hex key to binary
         self.key = self.hex_to_bin(key)
         self.PC_1 = PBox.des_key_initial_permutation()
@@ -14,39 +14,39 @@ class DES:
         self.single_shift = {1, 2, 9, 16}
         self.rounds, self.key_expansions = self.generate_rounds()
 
-    def hex_to_bin(self, hex_str):
+    @staticmethod
+    def hex_to_bin(hex_str) -> str:
         return bin(int(hex_str, 16))[2:].zfill(64)
 
-    def bin_to_hex(self, bin_str):
+    @staticmethod
+    def bin_to_hex(bin_str) -> str:
         return hex(int(bin_str, 2))[2:].upper()
 
-    def encrypt(self, hex_input: str) -> str:
+    def encrypt(self, hex_input: str) -> tuple[str, list[str], list[str]]:
         binary = self.hex_to_bin(hex_input)
         binary = self.P_i.permutate(binary)
         round_results = []
 
-        for round in self.rounds:
-            binary, round_result = round.encrypt(binary)
+        for enc_round in self.rounds:
+            binary, round_result = enc_round.encrypt(binary)
             round_results.append(self.bin_to_hex(round_result))  # Convert round result to hex
 
         encrypted_binary = self.P_f.permutate(binary)
         return self.bin_to_hex(encrypted_binary), round_results, self.key_expansions
 
-
-    def decrypt(self, hex_input: str) -> str:
+    def decrypt(self, hex_input: str) -> tuple[str, list[str], list[str]]:
         binary = self.hex_to_bin(hex_input)
         binary = self.P_f.invert().permutate(binary)
         round_results = []
 
-        for round in self.rounds[::-1]:  # Reverse order for decryption
-            binary, round_result = round.decrypt(binary)
+        for dec_round in self.rounds[::-1]:  # Reverse order for decryption
+            binary, round_result = dec_round.decrypt(binary)
             round_results.append(self.bin_to_hex(round_result))  # Convert round result to hex
 
         decrypted_binary = self.P_i.invert().permutate(binary)
         return self.bin_to_hex(decrypted_binary), round_results, self.key_expansions
 
-
-    def generate_rounds(self):
+    def generate_rounds(self) -> tuple[list[Round], list[str]]:
         rounds = []
         key_expansions = []
 
