@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encryption/Decryption History</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .history-table th, .history-table td {
+            padding: 14px 16px;
+            text-align: left;
+        }
+
+        .history-table thead {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        .history-table tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .status-pending {
+            color: #ff9800;
+            font-style: italic;
+        }
+
+        .status-complete {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .history-table thead {
+                display: none;
+            }
+
+            .history-table, .history-table tbody, .history-table tr, .history-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .history-table tr {
+                margin-bottom: 15px;
+                background: white;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                border-radius: 4px;
+                overflow: hidden;
+            }
+
+            .history-table td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+            }
+
+            .history-table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 15px;
+                width: 45%;
+                padding-left: 10px;
+                font-weight: bold;
+                text-align: left;
+                color: #555;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Your Encryption/Decryption History</h2>
+
+    {% if history %}
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Encrypted Message</th>
+                    <th>Decrypted Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in history %}
+                    <tr>
+                        <td data-label="Encrypted Message">{{ entry.encrypted_message }}</td>
+                        <td data-label="Decrypted Message">
+                            {% if entry.decrypted_message %}
+                                <span class="status-complete">{{ entry.decrypted_message }}</span>
+                            {% else %}
+                                <span class="status-pending">Not decrypted yet</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="text-align:center; color: #777;">No history available.</p>
+    {% endif %}
+
+</body>
+</html>
