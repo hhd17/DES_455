@@ -1,8 +1,10 @@
 from datetime import datetime, timezone, timedelta
 
-from flask import Blueprint, make_response, redirect, url_for
+import jwt
+from flask import Blueprint, make_response, redirect, url_for, render_template, request, current_app, jsonify
 
 from extensions import db, bcrypt
+from models import User, History
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -68,11 +70,6 @@ def logout():
     response.delete_cookie('token')
 
     return response
-
-
-from flask import render_template, request, current_app, jsonify
-import jwt
-from models import User, History
 
 
 @auth_bp.route('/history', methods=['GET'])
