@@ -11,26 +11,33 @@
             padding: 20px;
         }
         .container {
-            max-width: 500px;
+            max-width: 700px;
             margin: auto;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
-        input, button {
+        input, button, select {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
         }
         .result {
             font-weight: bold;
-            margin-top: 10px;
+            margin-top: 20px;
             word-wrap: break-word;
             white-space: normal;
-            overflow-wrap: break-word;
+            text-align: left;
         }
-        .error {
-            color: red;
+        .rounds {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .rounds h4 {
+            margin-bottom: 5px;
+        }
+        .rounds p {
+            font-family: monospace;
             font-size: 14px;
         }
     </style>
@@ -40,106 +47,46 @@
     <h2>DES Encryption & Decryption</h2>
 
     <div class="container">
-        <h3>Encrypt/Decrypt Hexadecimal</h3>
+        <form method="POST" action="/process">
+            <label for="mode">Select Mode:</label>
+            <select name="mode" id="mode">
+                <option value="ECB" {% if mode == 'ECB' %}selected{% endif %}>ECB</option>
+                <option value="CBC" {% if mode == 'CBC' %}selected{% endif %}>CBC</option>
+                <option value="CFB" {% if mode == 'CFB' %}selected{% endif %}>CFB</option>
+                <option value="OFB" {% if mode == 'OFB' %}selected{% endif %}>OFB</option>
+                <option value="CTR" {% if mode == 'CTR' %}selected{% endif %}>CTR</option>
+            </select>
 
-        <label for="hexMessage">Enter Hexadecimal Message (64-bit):</label>
-        <input type="text" id="hexMessage" placeholder="Enter hex message (64-bit)">
-        <p class="error" id="hexMessageError"></p>
+            <label for="action">Select Action:</label>
+            <select name="action" id="action">
+                <option value="encrypt" {% if action == 'encrypt' %}selected{% endif %}>Encrypt</option>
+                <option value="decrypt" {% if action == 'decrypt' %}selected{% endif %}>Decrypt</option>
+            </select>
 
-        <label for="hexKey">Enter Hexadecimal Key (64-bit):</label>
-        <input type="text" id="hexKey" placeholder="Enter hex key (64-bit)">
-        <p class="error" id="hexKeyError"></p>
+            <label for="message">Message:</label>
+            <input type="text" name="message" value="{{ original_message or '' }}" placeholder="Enter message (hex for ECB, text for CBC/CFB)" required>
 
-        <button onclick="encryptHex()">Encrypt</button>
-        <button onclick="decryptHex()">Decrypt</button>
+            <label for="key">Key (64-bit hex):</label>
+            <input type="text" name="key" value="{{ key or '' }}" placeholder="Example: 9BC1546914997F6C" required>
 
-        <p class="result" id="hexResult"></p>
-        <div id="roundResults"></div>
-        <div id="keyExpansions" class="key-expansions"></div>
+            <button type="submit">Submit</button>
+        </form>
+
+        {% if result %}
+        <div class="result">
+            <h4>Final Output:</h4>
+            <p>{{ result }}</p>
+        </div>
+        {% endif %}
+
+        {% if round_results %}
+        <div class="rounds">
+            <h4>Round Results:</h4>
+            {% for r in round_results %}
+                <p>Round {{ loop.index }}: {{ r }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
-
-    <script>
-        const API_URL = "http://127.0.0.1:5000";
-  
-        function clearErrors() {
-            document.getElementById("hexMessageError").innerText = "";
-            document.getElementById("hexKeyError").innerText = "";
-        }
-
-        function validateHexInput(input) {
-            return /^[0-9A-Fa-f]+$/.test(input);  // Check if the input contains only hexadecimal characters
-        }
-
-        async function encryptHex() {
-          clearErrors();
-          let hexMessage = document.getElementById("hexMessage").value.trim();
-          let hexKey = document.getElementById("hexKey").value.trim();
-      
-          // Validate the inputs
-          if (!validateHexInput(hexMessage)) {
-              document.getElementById("hexMessageError").innerText = "Invalid hexadecimal message input";
-              return;
-          }
-          if (!validateHexInput(hexKey)) {
-              document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
-              return;
-          }
-      
-          // Send both message and key to the server
-          let response = await fetch(`${API_URL}/encrypt`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ hex_message: hexMessage, hex_key: hexKey })
-          });
-          let data = await response.json();
-          document.getElementById("hexResult").innerText = "Encrypted: " + data.encrypted;
-          displayRoundResults(data.round_results);
-          displayKeyExpansions(data.key_expansions);
-      }
-      
-      async function decryptHex() {
-          clearErrors();
-          let hexMessage = document.getElementById("hexMessage").value.trim();
-          let hexKey = document.getElementById("hexKey").value.trim();
-      
-          // Validate the inputs
-          if (!validateHexInput(hexMessage)) {
-              document.getElementById("hexMessageError").innerText = "Invalid hexadecimal message input";
-              return;
-          }
-          if (!validateHexInput(hexKey)) {
-              document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
-              return;
-          }
-      
-          // Send both message and key to the server
-          let response = await fetch(`${API_URL}/decrypt`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ hex_message: hexMessage, hex_key: hexKey })
-          });
-          let data = await response.json();
-          document.getElementById("hexResult").innerText = "Decrypted: " + data.decrypted;
-          displayRoundResults(data.round_results);
-          displayKeyExpansions(data.key_expansions);
-      }
-
-        function displayRoundResults(roundResults) {
-            let resultDiv = document.getElementById("roundResults");
-            resultDiv.innerHTML = "<h4>Round Results:</h4>";
-            roundResults.forEach((result, index) => {
-                resultDiv.innerHTML += `<p>Round ${index + 1}: ${result}</p>`;
-            });
-        }
-
-        function displayKeyExpansions(keyExpansions) {
-            let keyDiv = document.getElementById("keyExpansions");
-            keyDiv.innerHTML = "<h4>Key Expansions:</h4>";
-            keyExpansions.forEach((key, index) => {
-                keyDiv.innerHTML += `<p>Round ${index + 1} Key: ${key}</p>`;
-            });
-        }
-    </script>
-  
 </body>
 </html>

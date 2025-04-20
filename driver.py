@@ -1,21 +1,72 @@
 from des import DES
+from des import modes
 
-plaintext = '112210F4C023B6D3'  # This is equivalent to 1234567891234567891 in DEC
-des = DES(key='9BC1546914997F6C')  # This is equivalent to 11223344556677889900 in DEC
+# Initialize DES instance
+key_hex = '9BC1546914997F6C'
+des = DES(key=key_hex)
 
-enc_text, enc_round_results, enc_key_expansions = des.encrypt(plaintext)
-dec_text, dec_round_results, dec_key_expansions = des.decrypt(enc_text)
+# Adapter functions for CBC and CFB
+def encrypt_block(block, key):
+    return bytes.fromhex(des.encrypt(block.hex())[0])
 
-print('### Input ###')
-print(f'Plaintext: {plaintext}')
-print(f'Key: {des.key} (Size = {len(des.key)})\n')
+def decrypt_block(block, key):
+    return bytes.fromhex(des.decrypt(block.hex())[0])
 
-print('### Encryption ###')
-print(f'Encrypted text: {enc_text}')
-print(f'Encryption round results: {enc_round_results}')
-print(f'Encryption key expansions: {enc_key_expansions}\n')
+print("=== DES Mode Demonstrations ===\\n")
 
-print('### Decryption ###')
-print(f'Decrypted text: {dec_text}')
-print(f'Decryption round results: {dec_round_results}')
-print(f'Decryption key expansions: {dec_key_expansions}')
+# === ECB MODE ===
+print("### ECB Mode ###")
+plaintext_ecb = '112210F4C023B6D3'
+enc_ecb, ecb_rounds, _ = des.encrypt(plaintext_ecb)
+dec_ecb, _, _ = des.decrypt(enc_ecb)
+print(f"Plaintext (hex): {plaintext_ecb}")
+print(f"Encrypted (ECB): {enc_ecb}")
+print(f"Decrypted (ECB): {dec_ecb}")
+print("Round-by-round results:")
+for i, r in enumerate(ecb_rounds, 1):
+    print(f"  Round {i}: {r}")
+print()
+
+# === CBC MODE ===
+print("### CBC Mode ###")
+plaintext_cbc = b"HelloWorld12345"
+cbc_key = key_hex.encode()
+enc_cbc = modes.encrypt_cbc(plaintext_cbc, cbc_key, encrypt_block)
+dec_cbc = modes.decrypt_cbc(enc_cbc, cbc_key, decrypt_block)
+print(f"Plaintext (raw): {plaintext_cbc}")
+print(f"Encrypted (CBC): {enc_cbc.hex()}")
+print(f"Decrypted (CBC): {dec_cbc.decode()}")
+print()
+
+# === CFB MODE ===
+print("### CFB Mode ###")
+plaintext_cfb = b"HelloCFB_ModeTest"
+cfb_key = key_hex.encode()
+enc_cfb = modes.encrypt_cfb(plaintext_cfb, cfb_key, encrypt_block)
+dec_cfb = modes.decrypt_cfb(enc_cfb, cfb_key, encrypt_block)
+print(f"Plaintext (raw): {plaintext_cfb}")
+print(f"Encrypted (CFB): {enc_cfb.hex()}")
+print(f"Decrypted (CFB): {dec_cfb.decode()}")
+print()
+
+# === OFB MODE ===
+print("### OFB Mode ###")
+plaintext_ofb = b"HelloOFB_ModeTest"
+ofb_key = key_hex.encode()
+enc_ofb = modes.encrypt_ofb(plaintext_ofb, ofb_key, encrypt_block)
+dec_ofb = modes.decrypt_ofb(enc_ofb, ofb_key, encrypt_block)
+print(f"Plaintext (raw): {plaintext_ofb}")
+print(f"Encrypted (OFB): {enc_ofb.hex()}")
+print(f"Decrypted (OFB): {dec_ofb.decode()}")
+print()
+
+# === CTR MODE ===
+print("### CTR Mode ###")
+plaintext_ctr = b"HelloCTR_ModeTest"
+ctr_key = key_hex.encode()
+enc_ctr = modes.encrypt_ctr(plaintext_ctr, ctr_key, encrypt_block)
+dec_ctr = modes.decrypt_ctr(enc_ctr, ctr_key, encrypt_block)
+print(f"Plaintext (raw): {plaintext_ctr}")
+print(f"Encrypted (CTR): {enc_ctr.hex()}")
+print(f"Decrypted (CTR): {dec_ctr.decode()}")
+print()
