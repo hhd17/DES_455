@@ -122,7 +122,7 @@ function getCookie(name) {
 
     try {
         const payload = JSON.parse(atob(token.split(".")[1] || ""));
-        const user = payload.sub || "User";
+        const user = payload.username || "User";
         box.innerHTML = `
           <span>Welcome, ${user}</span>
           <a href="/history">History</a>

@@ -1,10 +1,12 @@
-from flask import Flask, request, jsonify, render_template
+import jwt
+from flask import Flask, request, jsonify, render_template, current_app
 from flask_cors import CORS
 
 from auth import auth_bp
 from des.modes_runner import run_des
 from des.utils import hex_to_text, ensure_hex
 from extensions import db, bcrypt
+from models import User, History
 
 app = Flask(__name__)
 app.config.update(
@@ -42,6 +44,21 @@ def encrypt():
     try:
         hex_message = ensure_hex(message)
         cipher_hex, rounds, keys = run_des('encrypt', mode, hex_message, hex_key)
+        token = request.cookies.get('token')
+        if token:
+            try:
+                payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+                user = User.query.filter_by(username=payload['username']).first()
+                if user:
+                    h = History(
+                        encrypted_message=cipher_hex,
+                        decrypted_message=message,  # store the original plaintext
+                        user_id=user.id
+                    )
+                    db.session.add(h)
+                    db.session.commit()
+            except jwt.InvalidTokenError:
+                pass
         return jsonify(
             encrypted_hex=cipher_hex,
             round_results=rounds,
@@ -69,7 +86,21 @@ def decrypt():
         plain_hex, rounds, keys = run_des('decrypt', mode, hex_message, hex_key)
         text_guess = hex_to_text(plain_hex)
         safe_text = text_guess if all(c.isprintable() or c.isspace() for c in text_guess) else '[Non-text binary data]'
-
+        token = request.cookies.get('token')
+        if token:
+            try:
+                payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+                user = User.query.filter_by(username=payload['username']).first()
+                if user:
+                    h = History(
+                        encrypted_message=hex_message,  # store the ciphertext
+                        decrypted_message=safe_text,  # store the decoded plaintext
+                        user_id=user.id
+                    )
+                    db.session.add(h)
+                    db.session.commit()
+            except jwt.InvalidTokenError:
+                pass
         return jsonify(
             decrypted_text=safe_text,
             decrypted_hex=plain_hex,

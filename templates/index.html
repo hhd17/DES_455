@@ -26,12 +26,12 @@
       <option value="CTR">CTR</option>
     </select>
 
-    <label for="message">Plaintext (for encrypt) <br />or Hex ciphertext (for decrypt)</label>
-    <input id="message" placeholder="Enter text or hex" aria-describedby="msgErr" />
+    <label for="message">Plaintext for encryption<br />Ciphertext in hex (without 0x) for decryption</label>
+    <input id="message" placeholder="Enter plaintext or hex" aria-describedby="msgErr" />
     <p class="error" id="msgErr"></p>
 
-    <label for="hexKey">Key (16 hex chars = 64 bits incl. parity)</label>
-    <input id="hexKey" placeholder="e.g. 133457799bbcdff1" aria-describedby="keyErr" />
+    <label for="hexKey">Key (16 hex chars = 64 bits including parity)</label>
+    <input id="hexKey" placeholder="Enter key, e.g. 133457799bbcdff1" aria-describedby="keyErr" />
     <p class="error" id="keyErr"></p>
 
     <div class="actions">

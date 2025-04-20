@@ -16,19 +16,22 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str):
 
     if mode == 'ECB':
         if action == 'encrypt':
-            msg_bytes = bytes.fromhex(hex_message)
-            padded = pad(msg_bytes)
-            result_hex, rounds, keys = des.encrypt(padded.hex())
-            return result_hex, rounds, keys
-
+            msg_bytes = pad(bytes.fromhex(hex_message))
+            cipher_bytes = b''
+            for i in range(0, len(msg_bytes), BLOCK_SIZE):
+                block = msg_bytes[i:i + BLOCK_SIZE]
+                cipher_bytes += encrypt_block(block, raw_key_bytes)
+            _, rounds, keys = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())
+            return cipher_bytes.hex(), rounds, keys
         else:
-            decrypted_hex, rounds, keys = des.decrypt(hex_message)
-            decrypted_bytes = bytes.fromhex(decrypted_hex)
-            try:
-                unpadded = unpad(decrypted_bytes)
-            except Exception:
-                unpadded = decrypted_bytes
-            return unpadded.hex(), rounds, keys
+            msg_bytes = bytes.fromhex(hex_message)
+            plain_padded = b''
+            for i in range(0, len(msg_bytes), BLOCK_SIZE):
+                block = msg_bytes[i:i + BLOCK_SIZE]
+                plain_padded += decrypt_block(block, raw_key_bytes)
+            plain_bytes = unpad(plain_padded)
+            _, rounds, keys = des.decrypt(msg_bytes[:BLOCK_SIZE].hex())
+            return plain_bytes.hex(), rounds, keys
 
     msg_bytes = bytes.fromhex(hex_message)
 
