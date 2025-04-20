@@ -1,13 +1,14 @@
+import jwt
 from flask import Flask, current_app, request, jsonify, render_template
 from flask_cors import CORS
-import jwt
-from extensions import db, bcrypt
-from des import DES
-from models import History
+
 from auth import auth_bp
+from des import DES
+from extensions import db, bcrypt
+from models import History
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5000"])
+CORS(app, origins=['http://localhost:5000'])
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'supersecretkey'
@@ -23,38 +24,40 @@ app.register_blueprint(auth_bp)
 with app.app_context():
     db.create_all()
 
+
 def text_to_hex(text):
     return text.encode().hex()
+
 
 def hex_to_text(hex_str):
     try:
         return bytes.fromhex(hex_str).decode(errors='replace')  # Replaces invalid bytes with �
     except ValueError:
-        return "[Invalid hex to text]"
-    
+        return '[Invalid hex to text]'
 
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
 @app.route('/encrypt', methods=['POST'])
 def encrypt():
     data = request.get_json()
-    message = data['message']         # Plaintext message
-    hex_key = data['hex_key']         # Still expecting hex key
+    message = data['message']  # Plaintext message
+    hex_key = data['hex_key']  # Still expecting hex key
 
     token = request.cookies.get('token')
     try:
-        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
         user_id = payload['user_id']  # Assume user_id is part of the token
-    # Convert plaintext to hex
+        # Convert plaintext to hex
         hex_message = text_to_hex(message)
 
         # Create DES object using the user-provided key
         des = DES(key=hex_key)
         encrypted, round_results, key_expansions = des.encrypt(hex_message)
-        print("enc:",encrypted)
+        print('enc:', encrypted)
 
         # Log encryption to history
         new_history = History(
@@ -72,9 +75,10 @@ def encrypt():
         })
 
     except jwt.ExpiredSignatureError:
-        return jsonify({"error": "Token expired"}), 401
+        return jsonify({'error': 'Token expired'}), 401
     except jwt.InvalidTokenError:
-        return jsonify({"error": "Invalid token"}), 401
+        return jsonify({'error': 'Invalid token'}), 401
+
 
 @app.route('/decrypt', methods=['POST'])
 def decrypt():
@@ -83,7 +87,7 @@ def decrypt():
     hex_key = data['hex_key']
     token = request.cookies.get('token')
     try:
-        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=["HS256"])
+        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
         user_id = payload['user_id']  # Assume user_id is part of the token
         # Create DES object using the user-provided key
         des = DES(key=hex_key)
@@ -114,9 +118,9 @@ def decrypt():
             'key_expansions': key_expansions
         })
     except jwt.ExpiredSignatureError:
-        return jsonify({"error": "Token expired"}), 401
+        return jsonify({'error': 'Token expired'}), 401
     except jwt.InvalidTokenError:
-        return jsonify({"error": "Invalid token"}), 401
+        return jsonify({'error': 'Invalid token'}), 401
 
 
 if __name__ == '__main__':

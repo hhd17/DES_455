@@ -56,137 +56,137 @@
 </head>
 <body>
 
-    <header>
-        <h2>DES App</h2>
-        <div class="auth-links" id="authLinks"></div>
-    </header>
+<header>
+    <h2>DES App</h2>
+    <div class="auth-links" id="authLinks"></div>
+</header>
 
-    <div class="container">
-        <h3>Encrypt Plaintext / Decrypt Hexadecimal</h3>
+<div class="container">
+    <h3>Encrypt Plaintext / Decrypt Hexadecimal</h3>
 
-        <label for="message">Enter Plaintext (for encryption) or Hexadecimal (for decryption):</label>
-        <input type="text" id="message" placeholder="Enter message">
-        <p class="error" id="messageError"></p>
+    <label for="message">Enter Plaintext (for encryption) or Hexadecimal (for decryption):</label>
+    <input type="text" id="message" placeholder="Enter message">
+    <p class="error" id="messageError"></p>
 
-        <label for="hexKey">Enter Hexadecimal Key (64-bit):</label>
-        <input type="text" id="hexKey" placeholder="Enter hex key (64-bit)">
-        <p class="error" id="hexKeyError"></p>
+    <label for="hexKey">Enter Hexadecimal Key (64-bit):</label>
+    <input type="text" id="hexKey" placeholder="Enter hex key (64-bit)">
+    <p class="error" id="hexKeyError"></p>
 
-        <button onclick="encryptText()">Encrypt</button>
-        <button onclick="decryptHex()">Decrypt</button>
+    <button onclick="encryptText()">Encrypt</button>
+    <button onclick="decryptHex()">Decrypt</button>
 
-        <p class="result" id="result"></p>
-        <div id="roundResults"></div>
-        <div id="keyExpansions" class="key-expansions"></div>
-    </div>
+    <p class="result" id="result"></p>
+    <div id="roundResults"></div>
+    <div id="keyExpansions" class="key-expansions"></div>
+</div>
 
-    <script>
-        const API_URL = "http://localhost:5000";
+<script>
+    const API_URL = "http://localhost:5000";
 
-        function clearErrors() {
-            document.getElementById("messageError").innerText = "";
-            document.getElementById("hexKeyError").innerText = "";
+    function clearErrors() {
+        document.getElementById("messageError").innerText = "";
+        document.getElementById("hexKeyError").innerText = "";
+    }
+
+    function validateHexInput(input) {
+        return /^[0-9A-Fa-f]+$/.test(input);
+    }
+
+    async function encryptText() {
+        clearErrors();
+        let message = document.getElementById("message").value.trim();
+        let hexKey = document.getElementById("hexKey").value.trim();
+
+        if (message === "") {
+            document.getElementById("messageError").innerText = "Message cannot be empty";
+            return;
+        }
+        if (!validateHexInput(hexKey)) {
+            document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
+            return;
         }
 
-        function validateHexInput(input) {
-            return /^[0-9A-Fa-f]+$/.test(input);
+        let response = await fetch(`${API_URL}/encrypt`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message, hex_key: hexKey })
+        });
+        let data = await response.json();
+        document.getElementById("result").innerText = "Encrypted (Hex): " + data.encrypted_hex;
+        displayRoundResults(data.round_results);
+        displayKeyExpansions(data.key_expansions);
+    }
+
+    async function decryptHex() {
+        clearErrors();
+        let hexMessage = document.getElementById("message").value.trim();
+        let hexKey = document.getElementById("hexKey").value.trim();
+
+        if (!validateHexInput(hexMessage)) {
+            document.getElementById("messageError").innerText = "Invalid hexadecimal message input";
+            return;
+        }
+        if (!validateHexInput(hexKey)) {
+            document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
+            return;
         }
 
-        async function encryptText() {
-            clearErrors();
-            let message = document.getElementById("message").value.trim();
-            let hexKey = document.getElementById("hexKey").value.trim();
+        let response = await fetch(`${API_URL}/decrypt`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ hex_message: hexMessage, hex_key: hexKey })
+        });
+        let data = await response.json();
+        document.getElementById("result").innerText = `Decrypted: ${data.decrypted_text} (Hex: ${data.decrypted_hex})`;
+        displayRoundResults(data.round_results);
+        displayKeyExpansions(data.key_expansions);
+    }
 
-            if (message === "") {
-                document.getElementById("messageError").innerText = "Message cannot be empty";
-                return;
-            }
-            if (!validateHexInput(hexKey)) {
-                document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
-                return;
-            }
+    function displayRoundResults(roundResults) {
+        let resultDiv = document.getElementById("roundResults");
+        resultDiv.innerHTML = "<h4>Round Results:</h4>";
+        roundResults.forEach((result, index) => {
+            resultDiv.innerHTML += `<p>Round ${index + 1}: ${result}</p>`;
+        });
+    }
 
-            let response = await fetch(`${API_URL}/encrypt`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message, hex_key: hexKey })
-            });
-            let data = await response.json();
-            document.getElementById("result").innerText = "Encrypted (Hex): " + data.encrypted_hex;
-            displayRoundResults(data.round_results);
-            displayKeyExpansions(data.key_expansions);
+    function displayKeyExpansions(keyExpansions) {
+        let keyDiv = document.getElementById("keyExpansions");
+        keyDiv.innerHTML = "<h4>Key Expansions:</h4>";
+        keyExpansions.forEach((key, index) => {
+            keyDiv.innerHTML += `<p>Round ${index + 1} Key: ${key}</p>`;
+        });
+    }
+
+    function getCookie(name) {
+        let value = `; ${document.cookie}`;
+        let parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    function showHeaderAuthLinks() {
+        const authLinksDiv = document.getElementById("authLinks");
+        const token = getCookie("token"); // Get token from the cookie
+
+        if (!token) {
+            authLinksDiv.innerHTML = `
+                <a href="/login">Login</a>
+                <a href="/register">Register</a>
+            `;
+        } else {
+            // Decode token (only the payload, no verification since it's frontend)
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const username = payload.sub || "User";
+            authLinksDiv.innerHTML = `<span>Welcome, ${username}</span>
+            <a href="/history">History</a>
+            <a href="/logout">Logout</a>
+            `;
         }
+    }
 
-        async function decryptHex() {
-            clearErrors();
-            let hexMessage = document.getElementById("message").value.trim();
-            let hexKey = document.getElementById("hexKey").value.trim();
-
-            if (!validateHexInput(hexMessage)) {
-                document.getElementById("messageError").innerText = "Invalid hexadecimal message input";
-                return;
-            }
-            if (!validateHexInput(hexKey)) {
-                document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
-                return;
-            }
-
-            let response = await fetch(`${API_URL}/decrypt`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ hex_message: hexMessage, hex_key: hexKey })
-            });
-            let data = await response.json();
-            document.getElementById("result").innerText = `Decrypted: ${data.decrypted_text} (Hex: ${data.decrypted_hex})`;
-            displayRoundResults(data.round_results);
-            displayKeyExpansions(data.key_expansions);
-        }
-
-        function displayRoundResults(roundResults) {
-            let resultDiv = document.getElementById("roundResults");
-            resultDiv.innerHTML = "<h4>Round Results:</h4>";
-            roundResults.forEach((result, index) => {
-                resultDiv.innerHTML += `<p>Round ${index + 1}: ${result}</p>`;
-            });
-        }
-
-        function displayKeyExpansions(keyExpansions) {
-            let keyDiv = document.getElementById("keyExpansions");
-            keyDiv.innerHTML = "<h4>Key Expansions:</h4>";
-            keyExpansions.forEach((key, index) => {
-                keyDiv.innerHTML += `<p>Round ${index + 1} Key: ${key}</p>`;
-            });
-        }
-
-        function getCookie(name) {
-            let value = `; ${document.cookie}`;
-            let parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
-        }
-
-        function showHeaderAuthLinks() {
-            const authLinksDiv = document.getElementById("authLinks");
-            const token = getCookie("token"); // Get token from the cookie
-        
-            if (!token) {
-                authLinksDiv.innerHTML = `
-                    <a href="/login">Login</a>
-                    <a href="/register">Register</a>
-                `;
-            } else {
-                // Decode token (only the payload, no verification since it's frontend)
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                const username = payload.sub || "User";
-                authLinksDiv.innerHTML = `<span>Welcome, ${username}</span>
-                <a href="/history">History</a>
-                <a href="/logout">Logout</a>
-                `;
-            }
-        }
-        
-        showHeaderAuthLinks();
-    </script>
+    showHeaderAuthLinks();
+</script>
 
 </body>
 </html>

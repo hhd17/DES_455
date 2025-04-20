@@ -28,6 +28,7 @@ class PBox:
             for index, mapping in self.key.items():
                 result[mapping[0]] = index
             return PBox(result)
+        return None
 
     @staticmethod
     def identity(block_size=64):

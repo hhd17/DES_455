@@ -33,10 +33,11 @@ class SBox:
         if block == 6: return SBox.des_s_box6()
         if block == 7: return SBox.des_s_box7()
         if block == 8: return SBox.des_s_box8()
+        return None
 
     @staticmethod
     def des_confusion(binary: str) -> tuple:
-        """"Takes a 6-bit binary string as input and returns a 4-bit binary string as output"""
+        """Takes a 6-bit binary string as input and returns a 4-bit binary string as output"""
         return binary[0] + binary[5], binary[1: 5]
 
     @staticmethod

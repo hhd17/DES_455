@@ -31,7 +31,6 @@ class DES:
             binary, round_result = enc_round.encrypt(binary)
             round_results.append(self.bin_to_hex(binary))  # Full 64-bit block
 
-
         encrypted_binary = self.P_f.permutate(binary)
         return self.bin_to_hex(encrypted_binary), round_results, self.key_expansions
 
@@ -43,7 +42,6 @@ class DES:
         for dec_round in self.rounds[::-1]:  # Reverse order for decryption
             binary, round_result = dec_round.decrypt(binary)
             round_results.append(self.bin_to_hex(binary))
-
 
         decrypted_binary = self.P_i.invert().permutate(binary)
         return self.bin_to_hex(decrypted_binary), round_results, self.key_expansions

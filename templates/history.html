@@ -90,34 +90,34 @@
 </head>
 <body>
 
-    <h2>Your Encryption/Decryption History</h2>
+<h2>Your Encryption/Decryption History</h2>
 
-    {% if history %}
-        <table class="history-table">
-            <thead>
-                <tr>
-                    <th>Encrypted Message</th>
-                    <th>Decrypted Message</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for entry in history %}
-                    <tr>
-                        <td data-label="Encrypted Message">{{ entry.encrypted_message }}</td>
-                        <td data-label="Decrypted Message">
-                            {% if entry.decrypted_message %}
-                                <span class="status-complete">{{ entry.decrypted_message }}</span>
-                            {% else %}
-                                <span class="status-pending">Not decrypted yet</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p style="text-align:center; color: #777;">No history available.</p>
-    {% endif %}
+{% if history %}
+<table class="history-table">
+    <thead>
+    <tr>
+        <th>Encrypted Message</th>
+        <th>Decrypted Message</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for entry in history %}
+    <tr>
+        <td data-label="Encrypted Message">{{ entry.encrypted_message }}</td>
+        <td data-label="Decrypted Message">
+            {% if entry.decrypted_message %}
+            <span class="status-complete">{{ entry.decrypted_message }}</span>
+            {% else %}
+            <span class="status-pending">Not decrypted yet</span>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="text-align:center; color: #777;">No history available.</p>
+{% endif %}
 
 </body>
 </html>
