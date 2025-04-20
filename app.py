@@ -1,39 +1,113 @@
-import jwt
-from flask import Flask, current_app, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
 from auth import auth_bp
 from des import DES
+from des import modes
 from extensions import db, bcrypt
-from models import History
 
 app = Flask(__name__)
-CORS(app, origins=['http://localhost:5000'])
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'supersecretkey'
+app.config.update(
+    SQLALCHEMY_DATABASE_URI='sqlite:///users.db',
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    SECRET_KEY='supersecretkey'
+)
+CORS(app, resources={r'/*': {'origins': 'http://localhost:5000'}}, supports_credentials=True)
 
-# Initialize extensions
 db.init_app(app)
 bcrypt.init_app(app)
-
-# Register auth blueprint
 app.register_blueprint(auth_bp)
 
-# Create database tables
 with app.app_context():
     db.create_all()
 
 
-def text_to_hex(text):
-    return text.encode().hex()
-
-
-def hex_to_text(hex_str):
+def ensure_hex(s: str) -> str:
     try:
-        return bytes.fromhex(hex_str).decode(errors='replace')  # Replaces invalid bytes with �
+        int(s, 16)
+        return s.lower() if len(s) % 2 == 0 else '0' + s.lower()
     except ValueError:
-        return '[Invalid hex to text]'
+        return s.encode().hex()
+
+
+def hex_to_text(hex_str: str) -> str:
+    try:
+        return bytes.fromhex(hex_str).decode(errors='replace')
+    except ValueError:
+        return '[Invalid hex]'
+
+
+def run_des(action: str, mode: str, hex_message: str, hex_key: str):
+    des = DES(key=hex_key)
+    raw_key_bytes = hex_key.encode()
+
+    def encrypt_block(block: bytes, _k: bytes):
+        return bytes.fromhex(des.encrypt(block.hex())[0])
+
+    def decrypt_block(block: bytes, _k: bytes):
+        return bytes.fromhex(des.decrypt(block.hex())[0])
+
+    from des.modes import pad, unpad, BLOCK_SIZE
+
+    if mode == 'ECB':
+        if action == 'encrypt':
+            msg_bytes = bytes.fromhex(hex_message)
+            padded = pad(msg_bytes)
+            result_hex, rounds, keys = des.encrypt(padded.hex())
+            return result_hex, rounds, keys
+
+        else:
+            decrypted_hex, rounds, keys = des.decrypt(hex_message)
+            decrypted_bytes = bytes.fromhex(decrypted_hex)
+            try:
+                unpadded = unpad(decrypted_bytes)
+            except Exception:
+                unpadded = decrypted_bytes
+            return unpadded.hex(), rounds, keys
+
+    msg_bytes = bytes.fromhex(hex_message)
+
+    if mode == 'CBC':
+        if action == 'encrypt':
+            cipher_bytes = modes.encrypt_cbc(msg_bytes, raw_key_bytes, encrypt_block)
+            aux_rounds = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())
+            return cipher_bytes.hex(), aux_rounds[1], aux_rounds[2]
+        else:
+            plain_bytes = modes.decrypt_cbc(msg_bytes, raw_key_bytes, decrypt_block)
+            aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
+
+    if mode == 'CFB':
+        if action == 'encrypt':
+            cipher_bytes = modes.encrypt_cfb(msg_bytes, raw_key_bytes, encrypt_block)
+            aux_rounds = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())
+            return cipher_bytes.hex(), aux_rounds[1], aux_rounds[2]
+        else:
+            plain_bytes = modes.decrypt_cfb(msg_bytes, raw_key_bytes, encrypt_block)
+            aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
+
+    if mode == 'OFB':
+        if action == 'encrypt':
+            cipher_bytes = modes.encrypt_ofb(msg_bytes, raw_key_bytes, encrypt_block)
+            aux_rounds = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())
+            return cipher_bytes.hex(), aux_rounds[1], aux_rounds[2]
+        else:
+            plain_bytes = modes.decrypt_ofb(msg_bytes, raw_key_bytes, encrypt_block)
+            aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
+
+    if mode == 'CTR':
+        if action == 'encrypt':
+            cipher_bytes = modes.encrypt_ctr(msg_bytes, raw_key_bytes, encrypt_block)
+            aux_rounds = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())
+            return cipher_bytes.hex(), aux_rounds[1], aux_rounds[2]
+        else:
+            plain_bytes = modes.decrypt_ctr(msg_bytes, raw_key_bytes, encrypt_block)
+            aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
+
+    raise ValueError(f'Unsupported mode {mode}')
 
 
 @app.route('/')
@@ -42,86 +116,59 @@ def index():
 
 
 @app.route('/encrypt', methods=['POST'])
-def encrypt():
-    data = request.get_json()
-    message = data['message']  # Plaintext message
-    hex_key = data['hex_key']  # Still expecting hex key
+def api_encrypt():
+    data = request.get_json(force=True)
+    message = data.get('message', '')
+    hex_key = data.get('hex_key', '')
+    mode = data.get('mode', 'ECB').upper()
 
-    token = request.cookies.get('token')
+    if not message or not hex_key:
+        return jsonify(error='Message and hex_key are required'), 400
+    if len(hex_key) != 16 or not all(c in '0123456789abcdefABCDEF' for c in hex_key):
+        return jsonify(error='DES key must be 16 hex chars (64‑bit including parity)'), 400
+
     try:
-        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-        user_id = payload['user_id']  # Assume user_id is part of the token
-        # Convert plaintext to hex
-        hex_message = text_to_hex(message)
-
-        # Create DES object using the user-provided key
-        des = DES(key=hex_key)
-        encrypted, round_results, key_expansions = des.encrypt(hex_message)
-        print('enc:', encrypted)
-
-        # Log encryption to history
-        new_history = History(
-            encrypted_message=encrypted,
-            decrypted_message=message,  # Placeholder for decrypted message
-            user_id=user_id
+        hex_message = ensure_hex(message)
+        cipher_hex, rounds, keys = run_des('encrypt', mode, hex_message, hex_key)
+        return jsonify(
+            encrypted_hex=cipher_hex,
+            round_results=rounds,
+            key_expansions=keys
         )
-        db.session.add(new_history)
-        db.session.commit()
-
-        return jsonify({
-            'encrypted_hex': encrypted,
-            'round_results': round_results,
-            'key_expansions': key_expansions
-        })
-
-    except jwt.ExpiredSignatureError:
-        return jsonify({'error': 'Token expired'}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({'error': 'Invalid token'}), 401
+    except Exception as e:
+        return jsonify(error=str(e)), 500
 
 
 @app.route('/decrypt', methods=['POST'])
-def decrypt():
-    data = request.get_json()
-    hex_message = data['hex_message']  # Encrypted message in hex
-    hex_key = data['hex_key']
-    token = request.cookies.get('token')
+def api_decrypt():
+    data = request.get_json(force=True)
+    hex_message = data.get('hex_message', '')
+    hex_key = data.get('hex_key', '')
+    mode = data.get('mode', 'ECB').upper()
+
+    if not hex_message or not hex_key:
+        return jsonify(error='hex_message and hex_key are required'), 400
+    if any(c not in '0123456789abcdefABCDEF' for c in hex_message):
+        return jsonify(error='hex_message must be valid hex'), 400
+    if len(hex_key) != 16 or not all(c in '0123456789abcdefABCDEF' for c in hex_key):
+        return jsonify(error='DES key must be 16 hex chars'), 400
+
     try:
-        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-        user_id = payload['user_id']  # Assume user_id is part of the token
-        # Create DES object using the user-provided key
-        des = DES(key=hex_key)
-        decrypted_hex, round_results, key_expansions = des.decrypt(hex_message)
+        plain_hex, rounds, keys = run_des('decrypt', mode, hex_message, hex_key)
+        text_guess = hex_to_text(plain_hex)
+        safe_text = text_guess if all(c.isprintable() or c.isspace() for c in text_guess) else '[Non-text binary data]'
 
-        # Convert hex back to plaintext
-        decrypted_text = hex_to_text(decrypted_hex)
+        return jsonify(
+            decrypted_text=safe_text,
+            decrypted_hex=plain_hex,
+            round_results=rounds,
+            key_expansions=keys
+        )
 
-        # Log decryption to history
-        history = History.query.filter_by(user_id=user_id, encrypted_message=hex_message).first()
-        if history:
-            history.decrypted_message = decrypted_text
-        else:
-            # Create a new history entry if user hasn't encrypted this before
-            history = History(
-                encrypted_message=hex_message,
-                decrypted_message=decrypted_text,
-                user_id=user_id
-            )
-            db.session.add(history)
 
-        db.session.commit()
-
-        return jsonify({
-            'decrypted_text': decrypted_text,
-            'decrypted_hex': decrypted_hex,
-            'round_results': round_results,
-            'key_expansions': key_expansions
-        })
-    except jwt.ExpiredSignatureError:
-        return jsonify({'error': 'Token expired'}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({'error': 'Invalid token'}), 401
+    except Exception as e:
+        return jsonify(error=str(e)), 500
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
