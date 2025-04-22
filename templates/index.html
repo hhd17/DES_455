@@ -33,6 +33,17 @@
     <label for="hexKey">Key (16 hex chars = 64 bits including parity)</label>
     <input id="hexKey" placeholder="Enter key, e.g. 133457799bbcdff1" aria-describedby="keyErr" />
     <p class="error" id="keyErr"></p>
+    
+    <label for="extraParam" id="extraLabel" >
+      IV / Nonce / Counter (hex) – Required for Decryption
+    </label>
+    <input id="extraParam" placeholder="Enter hex value" />
+    <p class="error" id="extraErr"></p>
+    
+    <div id="generatedExtra" style="display: none;">
+      <strong>Generated IV/Nonce/Counter:</strong>
+      <code id="extraOutput"></code>
+    </div>
 
     <div class="actions">
       <button id="encBtn" onclick="handleEncrypt()">Encrypt</button>

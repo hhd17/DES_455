@@ -57,8 +57,15 @@ def encrypt():
         hex_message = ensure_hex(message)
 
         # Perform DES encryption
-        cipher_hex, rounds, keys = run_des('encrypt', mode, hex_message, hex_key)
+        result = run_des('encrypt', mode, hex_message, hex_key)
 
+        # Destructure based on length
+        if len(result) == 3:
+            cipher_hex, rounds, keys = result
+            extra = None
+        else:
+            cipher_hex, extra, rounds, keys = result
+            
         # Check if user is logged in using JWT token
         token = request.cookies.get('token')
         if token:
@@ -82,7 +89,8 @@ def encrypt():
         return jsonify(
             encrypted_hex=cipher_hex,
             round_results=rounds,
-            key_expansions=keys
+            key_expansions=keys,
+            extra=extra
         )
     except Exception as e:
         return jsonify(error=str(e)), 500
@@ -106,7 +114,12 @@ def decrypt():
 
     try:
         # Perform DES decryption
-        plain_hex, rounds, keys = run_des('decrypt', mode, hex_message, hex_key)
+        extra = data.get('extra', None)
+
+        if extra:
+            plain_hex, rounds, keys = run_des('decrypt', mode, hex_message, hex_key, extra)
+        else:
+            plain_hex, rounds, keys = run_des('decrypt', mode, hex_message, hex_key)
 
         # Try to convert hex to readable text
         text_guess = hex_to_text(plain_hex)
