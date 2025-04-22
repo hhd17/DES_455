@@ -3,9 +3,9 @@ from des.utils import *
 
 class SBox:
     def __init__(self, table: dict, block_size=4, func=lambda binary: (binary[0] + binary[5], binary[1:5])):
-        self.table = table                    # S-box mapping table: (row, col) → output
-        self.block_size = block_size          # Output size 
-        self.func = func                      # Function to extract (row, column) from 6-bit input
+        self.table = table  # S-box mapping table: (row, col) → output
+        self.block_size = block_size  # Output size
+        self.func = func  # Function to extract (row, column) from 6-bit input
 
     def __call__(self, binary: str) -> str:
         # Apply the S-box: extract row and column from input
@@ -54,8 +54,6 @@ class SBox:
             for column in range(len(sequence[0])):
                 mapping[(row, column)] = sequence[row][column]
         return SBox(table=mapping)
-
-    
 
     @staticmethod
     def des_s_box1():

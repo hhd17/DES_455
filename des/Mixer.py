@@ -73,6 +73,6 @@ class Mixer:
         return Mixer(
             key=key,
             initial_permutation=PBox.des_single_round_expansion(),  # Expand 32-bit R to 48-bit
-            final_permutation=PBox.des_single_round_final(),        # Permutation after S-boxes
-            func=lambda a, b: a ^ b                                 # XOR function
+            final_permutation=PBox.des_single_round_final(),  # Permutation after S-boxes
+            func=lambda a, b: a ^ b  # XOR function
         )

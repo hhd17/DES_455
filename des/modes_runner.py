@@ -1,4 +1,4 @@
-from des import DES 
+from des import DES
 from des import modes
 
 
@@ -59,7 +59,7 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str):
         if action == 'encrypt':
             # Encrypt using CBC: XOR with previous block and encrypt
             cipher_bytes = modes.encrypt_cbc(msg_bytes, raw_key_bytes, encrypt_block)
-            aux_rounds = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())                      # Log 1st block
+            aux_rounds = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())  # Log 1st block
             return cipher_bytes.hex(), aux_rounds[1], aux_rounds[2]
         else:
             # Decrypt using CBC: decrypt block and XOR with previous ciphertext

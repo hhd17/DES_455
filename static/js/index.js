@@ -121,13 +121,12 @@ function getCookie(name) {
     }
 
     try {
-        const payload = JSON.parse(atob(token.split(".")[1] || ""));
-        const user = payload.username || "User";
+        const payload = JSON.parse(atob(token.split(".")[1] || "{}"));
+        const uid = payload.user_id;
+        const pic = `/avatar/${uid}`;
         box.innerHTML = `
-          <span>Welcome, ${user}</span>
-          <a href="/history">History</a>
-          <a href="/logout">Logout</a>
-        `;
+  <a href="/profile"><img src="${pic}" class="avatar-thumb" alt="profile"></a>
+`;
     } catch {
         box.textContent = "";
     }

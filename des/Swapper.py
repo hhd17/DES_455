@@ -1,6 +1,6 @@
 class Swapper:
     def __init__(self, block_size=64) -> None:
-        self.block_size = block_size  
+        self.block_size = block_size
 
     def encrypt(self, binary: str) -> str:
         # Split into left and right halves, then swap them

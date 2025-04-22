@@ -3,9 +3,9 @@ from des import Mixer, NoneSwapper, Swapper
 
 class Round:
     def __init__(self, mixer, key_expansion=None):
-        self.mixer = mixer                      # Handles mixing 
-        self.swapper = NoneSwapper()            # Default: no swap (used in last round)
-        self.key_expansion = key_expansion      # Key info for logging/debug
+        self.mixer = mixer  # Handles mixing
+        self.swapper = NoneSwapper()  # Default: no swap (used in last round)
+        self.key_expansion = key_expansion  # Key info for logging/debug
 
     @staticmethod
     def with_swapper(mixer: Mixer, key_expansion=None):

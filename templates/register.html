@@ -1,18 +1,17 @@
-<html lang="en">
+{% extends "base.html" %} {% block title %}Register{% endblock %} {% block
+content %}
+<h3>Register</h3>
 
-<head>
-    <meta charset="UTF-8" />
-    <title>Register</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}" />
-</head>
+<form method="POST" action="{{ url_for('auth.register') }}">
+  <input type="text" name="username" placeholder="Username" required />
+  <input type="password" name="password" placeholder="Password" required
+    title="≥8 chars with upper, lower, digit and symbol" />
+  <input type="password" name="confirm" placeholder="Confirm Password" required />
+  <button type="submit">Create Account</button>
 
-<body>
-    <h2>Register</h2>
-    <form method="POST" action="/register">
-        <input type="text" name="username" placeholder="Username" required />
-        <input type="password" name="password" placeholder="Password" required />
-        <button type="submit">Register</button>
-    </form>
-</body>
+  {% if error %}
+  <p class="error">{{ error }}</p>
+  {% endif %}
+</form>
 
-</html>
+{% endblock %}

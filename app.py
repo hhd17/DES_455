@@ -2,7 +2,6 @@ import jwt
 from flask import Flask, request, jsonify, render_template, current_app
 from flask_cors import CORS
 
-
 from auth import auth_bp
 from des.modes_runner import run_des
 from des.utils import hex_to_text, ensure_hex
@@ -12,9 +11,9 @@ from models import User, History
 # Initialize Flask app and config
 app = Flask(__name__)
 app.config.update(
-    SQLALCHEMY_DATABASE_URI='sqlite:///users.db',            # SQLite database
-    SQLALCHEMY_TRACK_MODIFICATIONS=False,                    # Disable unnecessary tracking
-    SECRET_KEY='supersecretkey'                              # Secret key for JWT
+    SQLALCHEMY_DATABASE_URI='sqlite:///users.db',  # SQLite database
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,  # Disable unnecessary tracking
+    SECRET_KEY='supersecretkey'  # Secret key for JWT
 )
 
 # Enable CORS for frontend (e.g., localhost:5000)

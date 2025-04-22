@@ -44,8 +44,6 @@ class PBox:
             mapping[value] = indices
         return PBox(mapping)
 
-   
-
     @staticmethod
     def des_initial_permutation():
         # Initial permutation applied to plaintext

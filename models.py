@@ -5,7 +5,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
-    history = db.relationship('History', backref='user', lazy=True)
+    avatar = db.Column(db.String(150), default='img/default_avatar.png')
+    history = db.relationship('History', backref='user', cascade='all, delete', passive_deletes=True)
 
 
 class History(db.Model):

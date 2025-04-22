@@ -1,0 +1,50 @@
+{# templates/profile.html #} {% extends "base.html" %} {% block title
+%}Profile{% endblock %} {% block content %}
+
+<div style="text-align: center">
+    <form method="POST" action="{{ url_for('auth.update_avatar') }}" enctype="multipart/form-data"
+        style="margin-bottom: 24px">
+        <label for="avatarInput" style="cursor: pointer">
+            <img src="{{ url_for('auth.avatar', user_id=user.id) }}" class="avatar-large" alt="avatar" />
+        </label>
+        <input type="file" name="avatar" id="avatarInput" accept="image/*" hidden onchange="this.form.submit()" />
+    </form>
+
+    <h3>Your Profile</h3>
+</div>
+
+<form method="POST" action="{{ url_for('auth.update_username') }}">
+    <label>User ID</label>
+    <input type="text" value="{{ user.id }}" disabled />
+
+    <label for="new_username">Username</label>
+    <input name="new_username" id="new_username" value="{{ user.username }}" required />
+
+    <button type="submit">Change Username</button>
+</form>
+
+<hr style="margin: 24px 0" />
+
+<form method="POST" action="{{ url_for('auth.update_password') }}">
+    <label>Change Password</label>
+    <input type="password" name="password" placeholder="New Password" required
+        title="≥8 chars with upper, lower, digit, symbol" />
+    <input type="password" name="confirm" placeholder="Confirm Password" required />
+    <button type="submit">Change Password</button>
+</form>
+
+<hr style="margin: 24px 0" />
+
+<div class="actions" style="justify-content: flex-start">
+    <a class="button" href="{{ url_for('auth.get_history') }}">View History</a>
+
+    <form method="POST" action="{{ url_for('auth.delete_account') }}"
+        onsubmit="return confirm('Delete your account and all data? This cannot be undone.');">
+        <button type="submit" style="background: #d43838">Delete Account</button>
+    </form>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %} {% for cat, msg
+in messages %}
+<p class="flash {{ 'error' if cat=='error' else 'success' }}">{{ msg }}</p>
+{% endfor %} {% endwith %} {% endblock %}
