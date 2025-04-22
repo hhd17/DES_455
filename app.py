@@ -1,7 +1,7 @@
 import jwt
 from flask import Flask, request, jsonify, render_template, current_app
 from flask_cors import CORS
-
+from des import DES
 from auth import auth_bp
 from des.modes_runner import run_des
 from des.utils import hex_to_text, ensure_hex
@@ -26,10 +26,30 @@ bcrypt.init_app(app)
 # Register authentication routes
 app.register_blueprint(auth_bp)
 
+
 # Create tables if they don't exist
 with app.app_context():
     db.create_all()
 
+@app.route('/des/details')
+def des_details():
+    des = DES("9BC1546914997F6C")
+    plaintext = "112210F4C023B6D3"
+    ciphertext, _, _ = des.encrypt(plaintext)
+
+    encryption_steps = des.encrypt(plaintext, verbose=True)
+    decryption_steps = des.decrypt(ciphertext, verbose=True)
+    key_schedule = des.get_key_expansion_details()
+
+    return render_template(
+        "des_details.html",
+        plaintext=plaintext,
+        key=des.key,
+        encryption_steps=encryption_steps,
+        decryption_steps=decryption_steps,
+        key_schedule=key_schedule,
+        ciphertext=ciphertext
+    )
 
 @app.route('/')
 def index():

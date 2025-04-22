@@ -29,43 +29,64 @@ class Mixer:
         # Subkey used in the current round
         self.key = key
 
-    def encrypt(self, binary: str):
-        # Split input into left and right halves (32 bits each)
-        l, r = binary[:self.block_size // 2], binary[self.block_size // 2:]
+    def encrypt(self, binary: str, verbose=False):
+        # Split input into left and right halves
+        l = binary[:self.block_size // 2]
+        r = binary[self.block_size // 2:]
 
-        # Apply initial permutation 
+        # Step 1: Initial permutation of right half
         r1 = self.initial_permutation.permutate(r)
 
-        # XOR permuted right half with round key
-        r2 = int_to_bin(self.func(int(r1, base=2), self.key), block_size=self.initial_permutation.out_degree)
+        # Step 2: XOR right half with round key
+        r2 = int_to_bin(
+           self.func(int(r1, base=2), self.key),
+          block_size=self.initial_permutation.out_degree
+        )
 
-        # Apply S-box substitution
+        # Step 3: S-box substitution
         r3 = ''
+        sbox_outputs = []
         for i in range(len(self.substitutions)):
-            block = r2[i * self.substitution_block_size: (i + 1) * self.substitution_block_size]
+            block = r2[i * self.substitution_block_size : (i + 1) * self.substitution_block_size]
             substitution_result = self.substitutions[i](block)
 
-            # Make sure substitution result is in 4-bit binary string format
+            # Format result as 4-bit binary string
             if not isinstance(substitution_result, str):
                 substitution_result = bin(substitution_result)[2:].zfill(4)
+
+            sbox_outputs.append(substitution_result)
             r3 += substitution_result
 
-        # Apply final permutation to substituted data
-        r3 = self.final_permutation.permutate(r3)
+        # Step 4: P-box permutation
+        r4 = self.final_permutation.permutate(r3)
 
-        # Type check to avoid silent errors
-        if not isinstance(r3, str):
-            raise TypeError(f'Expected r3 to be a string, but got {type(r3)}')
+        if not isinstance(r4, str):
+            raise TypeError(f'Expected r4 to be a string, but got {type(r4)}')
 
-        # XOR left half with output from final permutation to get new left
-        l = int_to_bin(int(l, base=2) ^ int(r3, base=2), block_size=self.block_size // 2)
+        # Step 5: XOR with left half to get new right
+        new_r = int_to_bin(int(l, base=2) ^ int(r4, base=2), block_size=self.block_size // 2)
 
-        # Return new 64-bit block and intermediate value r3 for logging
-        return l + r, r3
+        # Step 6: Concatenate old right and new right (as L and R are swapped)
+        new_block = r + new_r
 
-    def decrypt(self, binary: str):
+        # If verbose mode is on, return a detailed breakdown
+        if verbose:
+            return new_block, {
+                "left": l,
+                "right": r,
+                "permuted_right": r1,
+                "xored_with_key": r2,
+                "sbox_outputs": sbox_outputs,
+                "pbox_output": r4,
+                "new_right": new_r,
+                "final_block": new_block
+            }
+
+        return new_block, r4
+
+    def decrypt(self, binary: str,verbose=False):
         # Encryption and decryption use the same structure but keys are reversed
-        return self.encrypt(binary)
+        return self.encrypt(binary,verbose=verbose)
 
     @staticmethod
     def des_mixer(key: int):

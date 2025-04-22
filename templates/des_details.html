@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h2 class="mb-4">DES Round 1 Breakdown</h2>
+
+  <h4>Input</h4>
+  <p><strong>Plaintext:</strong> {{ plaintext }}</p>
+  <p><strong>Key (binary):</strong> {{ key }}</p>
+  <p><strong>Ciphertext:</strong> {{ ciphertext }}</p>
+
+  <hr>
+
+  <h4> Encryption Round 1</h4>
+  <ul>
+    {% for k, v in encryption_steps.items() %}
+    <li><strong>{{ k }}:</strong> {{ v }}</li>
+    {% endfor %}
+  </ul>
+
+  <hr>
+
+  <h4> Decryption Round 1</h4>
+  <ul>
+    {% for k, v in decryption_steps.items() %}
+    <li><strong>{{ k }}:</strong> {{ v }}</li>
+    {% endfor %}
+  </ul>
+
+  <hr>
+
+  <h4> Key Expansion Round 1</h4>
+  <ul>
+    {% for k, v in key_schedule.items() %}
+    <li><strong>{{ k }}:</strong> {{ v }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

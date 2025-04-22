@@ -19,13 +19,36 @@ class Round:
         # Create a round without swapping (used in round 16)
         return Round(mixer, key_expansion)
 
-    def encrypt(self, binary: str):
-        # Apply mixer, then swap left and right
-        binary, round_result = self.mixer.encrypt(binary)
-        swapped_binary = self.swapper.encrypt(binary)
-        return swapped_binary, round_result
+    def encrypt(self, binary: str, verbose=False):
+        if verbose:
+            # Get detailed breakdown from mixer
+            binary, step_details = self.mixer.encrypt(binary, verbose=True)
+        
+            # Apply swap
+            swapped_binary = self.swapper.encrypt(binary)
 
-    def decrypt(self, binary: str):
-        # Undo swap, then apply mixer 
-        binary = self.swapper.decrypt(binary)
-        return self.mixer.encrypt(binary)
+            # Add swap result to breakdown
+            step_details["after_swap"] = swapped_binary
+            return swapped_binary, step_details
+        else:
+            # Regular encryption
+            binary, round_result = self.mixer.encrypt(binary)
+            swapped_binary = self.swapper.encrypt(binary)
+            return swapped_binary, round_result
+
+    def decrypt(self, binary: str, verbose=False):
+        if verbose:
+            # 1. Undo the swap first
+            binary = self.swapper.decrypt(binary)
+
+            # 2. Call mixer in verbose mode
+            binary, step_details = self.mixer.decrypt(binary, verbose=True)
+
+            # 3. Track final result after mixer
+            step_details["after_unswap"] = binary
+            return binary, step_details
+        else:
+            # Default silent behavior
+            binary = self.swapper.decrypt(binary)
+            binary, _ = self.mixer.decrypt(binary)
+            return binary, binary
