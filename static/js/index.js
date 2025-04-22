@@ -1,4 +1,9 @@
 const $ = (id) => document.getElementById(id);
+const extraField = $("extraParam");
+const extraLabel = $("extraLabel");
+const extraError = $("extraErr");
+const generatedExtraBox = $("generatedExtra");
+const extraOutput = $("extraOutput");
 const API = window.location.origin;
 
 const isHex = (str) => /^[0-9a-fA-F]+$/.test(str);
@@ -6,7 +11,9 @@ const clearErrors = () => {
     $("msgErr").textContent = "";
     $("keyErr").textContent = "";
 };
-
+$("mode").addEventListener("change", () => {
+    updateExtraFieldVisibility();
+});
 const disableButtons = (disabled) => {
     $("encBtn").disabled = $("decBtn").disabled = disabled;
 };
@@ -21,6 +28,12 @@ const renderList = (containerId, title, items, className) => {
     });
 };
 
+function updateExtraFieldVisibility() {
+    const mode = $("mode").value;
+    const shouldShow = mode !== "ECB";
+    extraField.style.display = shouldShow ? "block" : "none";
+    extraLabel.style.display = shouldShow ? "block" : "none";
+}
 async function fetchDES(endpoint, payload) {
     const response = await fetch(`${API}/${endpoint}`, {
         method: "POST",
@@ -31,9 +44,9 @@ async function fetchDES(endpoint, payload) {
     if (data.error) throw new Error(data.error);
     return data;
 }
-
 async function handleEncrypt() {
     clearErrors();
+    updateExtraFieldVisibility();
     const message = $("message").value.trim();
     const key = $("hexKey").value.trim().toLowerCase();
     const mode = $("mode").value;
@@ -55,6 +68,13 @@ async function handleEncrypt() {
             mode,
         });
         writeResult(`Encrypted (hex):\n${result.encrypted_hex}`);
+        if (result.extra) {
+            generatedExtraBox.style.display = "block";
+            extraOutput.textContent = result.extra;
+        } else {
+            generatedExtraBox.style.display = "none";
+            extraOutput.textContent = "";
+        }
         renderList("roundBox", "Round Results", result.round_results, "round");
         renderList("keyBox", "Key Expansions", result.key_expansions, "key");
     } catch (e) {
@@ -68,10 +88,11 @@ async function handleEncrypt() {
 
 async function handleDecrypt() {
     clearErrors();
+    updateExtraFieldVisibility();
     const hexMsg = $("message").value.trim().toLowerCase();
     const key = $("hexKey").value.trim().toLowerCase();
     const mode = $("mode").value;
-
+    const payload = { hex_message: hexMsg, hex_key: key, mode };
     if (!hexMsg || !isHex(hexMsg)) {
         $("msgErr").textContent = "Valid hex required";
         return;
@@ -80,14 +101,18 @@ async function handleDecrypt() {
         $("keyErr").textContent = "Key must be 16‑char hex";
         return;
     }
-
+    if (mode !== "ECB") {
+        const extra = extraField.value.trim();
+        if (!isHex(extra)) {
+            extraError.textContent =
+                "IV / nonce / counter is required and must be hex.";
+            return;
+        }
+        payload.extra = extra;
+    }
     disableButtons(true);
     try {
-        const result = await fetchDES("decrypt", {
-            hex_message: hexMsg,
-            hex_key: key,
-            mode,
-        });
+        const result = await fetchDES("decrypt", payload);
         writeResult(
             `Decrypted (utf‑8):\n${result.decrypted_text}\n\nHex:\n${result.decrypted_hex}`
         );

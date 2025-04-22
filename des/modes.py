@@ -50,23 +50,20 @@ def encrypt_cbc(plaintext, key, encrypt_block):
         ciphertext += encrypted  # Append to ciphertext
         prev_block = encrypted  # Update chaining block
 
-    return iv + ciphertext  # Prepend IV to ciphertext
+    return ciphertext, iv
 
 
-def decrypt_cbc(ciphertext, key, decrypt_block):
-    iv = ciphertext[:BLOCK_SIZE]  # Extract IV
-    ciphertext_body = ciphertext[BLOCK_SIZE:]  # Remaining ciphertext
-    plaintext = b''
+def decrypt_cbc(ciphertext, key, decrypt_block, iv):
+    decrypted = b''
     prev_block = iv
 
-    for i in range(0, len(ciphertext_body), BLOCK_SIZE):
-        block = ciphertext_body[i:i + BLOCK_SIZE]
-        decrypted = decrypt_block(block, key)  # Decrypt current ciphertext block
-        xored = xor_bytes(decrypted, prev_block)  # XOR with previous ciphertext block (or IV)
-        plaintext += xored
+    for i in range(0, len(ciphertext), BLOCK_SIZE):
+        block = ciphertext[i:i + BLOCK_SIZE]
+        decrypted_block = decrypt_block(block, key)
+        decrypted += xor_bytes(decrypted_block, prev_block)
         prev_block = block
 
-    return unpad(plaintext)
+    return unpad(decrypted)
 
 
 # CFB (Cipher Feedback) MODE
@@ -83,17 +80,15 @@ def encrypt_cfb(plaintext, key, encrypt_block):
         ciphertext += cipher_block[:len(block)]  # Trim padding for last block
         prev = cipher_block  # Update feedback register
 
-    return iv + ciphertext
+    return ciphertext, iv
 
 
-def decrypt_cfb(ciphertext, key, encrypt_block):
-    iv = ciphertext[:BLOCK_SIZE]
-    ciphertext_body = ciphertext[BLOCK_SIZE:]
+def decrypt_cfb(ciphertext, key, encrypt_block, iv):
     plaintext = b''
     prev = iv
 
-    for i in range(0, len(ciphertext_body), BLOCK_SIZE):
-        block = ciphertext_body[i:i + BLOCK_SIZE]
+    for i in range(0, len(ciphertext), BLOCK_SIZE):
+        block = ciphertext[i:i + BLOCK_SIZE]
         encrypted = encrypt_block(prev, key)
         plain_block = xor_bytes(block.ljust(BLOCK_SIZE, bytes([0])), encrypted)
         plaintext += plain_block[:len(block)]
@@ -105,9 +100,9 @@ def decrypt_cfb(ciphertext, key, encrypt_block):
 # OFB (Output Feedback) MODE
 
 def encrypt_ofb(plaintext, key, encrypt_block):
-    iv = urandom(BLOCK_SIZE)
+    nonce = urandom(BLOCK_SIZE)
     output = b''
-    prev = iv
+    prev = nonce
 
     for i in range(0, len(plaintext), BLOCK_SIZE):
         block = plaintext[i:i + BLOCK_SIZE]
@@ -116,18 +111,16 @@ def encrypt_ofb(plaintext, key, encrypt_block):
         output += cipher_block[:len(block)]
         prev = keystream  # Update keystream
 
-    return iv + output
+    return output, nonce
 
 
-def decrypt_ofb(ciphertext, key, encrypt_block):
+def decrypt_ofb(ciphertext, key, encrypt_block, nonce):
     # Decryption is identical to encryption in OFB mode
-    iv = ciphertext[:BLOCK_SIZE]
-    ciphertext_body = ciphertext[BLOCK_SIZE:]
     output = b''
-    prev = iv
+    prev = nonce
 
-    for i in range(0, len(ciphertext_body), BLOCK_SIZE):
-        block = ciphertext_body[i:i + BLOCK_SIZE]
+    for i in range(0, len(ciphertext), BLOCK_SIZE):
+        block = ciphertext[i:i + BLOCK_SIZE]
         keystream = encrypt_block(prev, key)
         plain_block = xor_bytes(block.ljust(BLOCK_SIZE, bytes([0])), keystream)
         output += plain_block[:len(block)]
@@ -139,36 +132,41 @@ def decrypt_ofb(ciphertext, key, encrypt_block):
 # CTR (Counter) MODE
 
 def encrypt_ctr(plaintext, key, encrypt_block):
-    nonce = urandom(BLOCK_SIZE // 2)  # Use half the block size as a nonce
-    output = b''
-    counter = 0
+    # Generate a full 8-byte (64-bit) random counter
+    initial_counter = int.from_bytes(urandom(BLOCK_SIZE), byteorder='big')
+    ciphertext = b''
 
     for i in range(0, len(plaintext), BLOCK_SIZE):
         block = plaintext[i:i + BLOCK_SIZE]
-        counter_bytes = counter.to_bytes(BLOCK_SIZE // 2, byteorder='big')  # Convert counter to bytes
-        keystream_input = nonce + counter_bytes  # Concatenate nonce + counter
-        keystream = encrypt_block(keystream_input, key)  # Encrypt to get keystream
+
+        # Convert counter to bytes
+        counter_bytes = (initial_counter + i // BLOCK_SIZE).to_bytes(BLOCK_SIZE, byteorder='big')
+
+        # Encrypt counter to get keystream
+        keystream = encrypt_block(counter_bytes, key)
+
+        # XOR with padded block and cut to actual size
         cipher_block = xor_bytes(block.ljust(BLOCK_SIZE, bytes([0])), keystream)
-        output += cipher_block[:len(block)]
-        counter += 1
+        ciphertext += cipher_block[:len(block)]
 
-    return nonce + output
+    return ciphertext, initial_counter.to_bytes(BLOCK_SIZE, byteorder='big')  # Return cipher + raw counter
 
 
-def decrypt_ctr(ciphertext, key, encrypt_block):
-    # CTR decryption = encryption
-    nonce = ciphertext[:BLOCK_SIZE // 2]
-    ciphertext_body = ciphertext[BLOCK_SIZE // 2:]
-    output = b''
-    counter = 0
+def decrypt_ctr(ciphertext, key, encrypt_block, initial_counter_bytes):
+    plaintext = b''
+    initial_counter = int.from_bytes(initial_counter_bytes, byteorder='big')
 
-    for i in range(0, len(ciphertext_body), BLOCK_SIZE):
-        block = ciphertext_body[i:i + BLOCK_SIZE]
-        counter_bytes = counter.to_bytes(BLOCK_SIZE // 2, byteorder='big')
-        keystream_input = nonce + counter_bytes
-        keystream = encrypt_block(keystream_input, key)
+    for i in range(0, len(ciphertext), BLOCK_SIZE):
+        block = ciphertext[i:i + BLOCK_SIZE]
+
+        # Reconstruct counter value for this block
+        counter_bytes = (initial_counter + i // BLOCK_SIZE).to_bytes(BLOCK_SIZE, byteorder='big')
+
+        # Generate keystream from encrypted counter
+        keystream = encrypt_block(counter_bytes, key)
+
+        # XOR ciphertext block with keystream
         plain_block = xor_bytes(block.ljust(BLOCK_SIZE, bytes([0])), keystream)
-        output += plain_block[:len(block)]
-        counter += 1
+        plaintext += plain_block[:len(block)]
 
-    return output
+    return plaintext

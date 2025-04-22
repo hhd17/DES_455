@@ -2,7 +2,7 @@ from des import DES
 from des import modes
 
 
-def run_des(action: str, mode: str, hex_message: str, hex_key: str):
+def run_des(action: str, mode: str, hex_message: str, hex_key: str, extra: str = None):
     # Initialize DES with  provided key
     des = DES(key=hex_key)
 
@@ -10,12 +10,12 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str):
     raw_key_bytes = hex_key.encode()
 
     # Encrypt a single 8-byte block
-    def encrypt_block(block: bytes, _k: bytes):
-        return bytes.fromhex(des.encrypt(block.hex())[0])
+    def encrypt_block(block_: bytes, _k: bytes):
+        return bytes.fromhex(des.encrypt(block_.hex())[0])
 
     # Decrypt a single 8-byte block
-    def decrypt_block(block: bytes, _k: bytes):
-        return bytes.fromhex(des.decrypt(block.hex())[0])
+    def decrypt_block(block_: bytes, _k: bytes):
+        return bytes.fromhex(des.decrypt(block_.hex())[0])
 
     from des.modes import pad, unpad, BLOCK_SIZE
 
@@ -58,12 +58,13 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str):
     if mode == 'CBC':
         if action == 'encrypt':
             # Encrypt using CBC: XOR with previous block and encrypt
-            cipher_bytes = modes.encrypt_cbc(msg_bytes, raw_key_bytes, encrypt_block)
+            cipher_bytes, iv = modes.encrypt_cbc(msg_bytes, raw_key_bytes, encrypt_block)
             aux_rounds = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())  # Log 1st block
-            return cipher_bytes.hex(), aux_rounds[1], aux_rounds[2]
+            return cipher_bytes.hex(), iv.hex(), aux_rounds[1], aux_rounds[2]
         else:
             # Decrypt using CBC: decrypt block and XOR with previous ciphertext
-            plain_bytes = modes.decrypt_cbc(msg_bytes, raw_key_bytes, decrypt_block)
+            iv = bytes.fromhex(extra) if extra else None
+            plain_bytes = modes.decrypt_cbc(msg_bytes, raw_key_bytes, decrypt_block, iv)
             aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
             return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
 
@@ -71,12 +72,13 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str):
     if mode == 'CFB':
         if action == 'encrypt':
             # Encrypt using CFB: encrypt IV, then XOR with plaintext
-            cipher_bytes = modes.encrypt_cfb(msg_bytes, raw_key_bytes, encrypt_block)
+            cipher_bytes, iv = modes.encrypt_cfb(msg_bytes, raw_key_bytes, encrypt_block)
             aux_rounds = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())
-            return cipher_bytes.hex(), aux_rounds[1], aux_rounds[2]
+            return cipher_bytes.hex(), iv.hex(), aux_rounds[1], aux_rounds[2]
         else:
             # Decrypt using CFB: encrypt IV, then XOR with ciphertext
-            plain_bytes = modes.decrypt_cfb(msg_bytes, raw_key_bytes, encrypt_block)
+            iv = bytes.fromhex(extra) if extra else None
+            plain_bytes = modes.decrypt_cfb(msg_bytes, raw_key_bytes, encrypt_block, iv)
             aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
             return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
 
@@ -84,12 +86,13 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str):
     if mode == 'OFB':
         if action == 'encrypt':
             # Encrypt using OFB: encrypt feedback, then XOR with plaintext
-            cipher_bytes = modes.encrypt_ofb(msg_bytes, raw_key_bytes, encrypt_block)
+            cipher_bytes, nonce = modes.encrypt_ofb(msg_bytes, raw_key_bytes, encrypt_block)
             aux_rounds = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())
-            return cipher_bytes.hex(), aux_rounds[1], aux_rounds[2]
+            return cipher_bytes.hex(), nonce.hex(), aux_rounds[1], aux_rounds[2]
         else:
             # Decrypt using OFB: same operation as encryption
-            plain_bytes = modes.decrypt_ofb(msg_bytes, raw_key_bytes, encrypt_block)
+            nonce = bytes.fromhex(extra) if extra else None
+            plain_bytes = modes.decrypt_ofb(msg_bytes, raw_key_bytes, encrypt_block, nonce)
             aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
             return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
 
@@ -97,12 +100,13 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str):
     if mode == 'CTR':
         if action == 'encrypt':
             # Encrypt using CTR: encrypt counter, then XOR with plaintext
-            cipher_bytes = modes.encrypt_ctr(msg_bytes, raw_key_bytes, encrypt_block)
+            cipher_bytes, counter = modes.encrypt_ctr(msg_bytes, raw_key_bytes, encrypt_block)
             aux_rounds = des.encrypt(msg_bytes[:BLOCK_SIZE].hex())
-            return cipher_bytes.hex(), aux_rounds[1], aux_rounds[2]
+            return cipher_bytes.hex(), counter.hex(), aux_rounds[1], aux_rounds[2]
         else:
             # Decrypt using CTR: same operation as encryption
-            plain_bytes = modes.decrypt_ctr(msg_bytes, raw_key_bytes, encrypt_block)
+            counter = bytes.fromhex(extra) if extra else None
+            plain_bytes = modes.decrypt_ctr(msg_bytes, raw_key_bytes, encrypt_block, counter)
             aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
             return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
 
