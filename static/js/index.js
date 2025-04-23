@@ -14,26 +14,54 @@ const clearErrors = () => {
 $("mode").addEventListener("change", () => {
     updateExtraFieldVisibility();
 });
+$("operation").addEventListener("change", updateExtraFieldVisibility);
 const disableButtons = (disabled) => {
-    $("encBtn").disabled = $("decBtn").disabled = disabled;
+    $("submitBtn").disabled = disabled;
 };
+document.addEventListener("DOMContentLoaded", updateExtraFieldVisibility);
 
 const writeResult = (text) => ($("result").textContent = text);
 
 const renderList = (containerId, title, items, className) => {
     const box = $(containerId);
     box.innerHTML = items.length ? `<h4>${title}</h4>` : "";
+
     items.forEach((item, i) => {
         box.innerHTML += `<div class="${className}">Round ${i + 1}: ${item}</div>`;
     });
+
+    // Inject button ONLY inside keyBox
+    if (containerId === "keyBox") {
+        box.innerHTML += `
+            <div class="mt-4 text-center" id="viewDetailsBtn" style="display: none;">
+                <a href="/des/details" class="btn btn-primary">
+                       View Round 1 & Key Details
+                </a>
+            </div>
+        `;
+    }
 };
 
 function updateExtraFieldVisibility() {
     const mode = $("mode").value;
-    const shouldShow = mode !== "ECB";
+    const operation = $("operation").value;
+
+    const shouldShow = operation === "decrypt" && mode !== "ECB";
+
+    // Toggle visibility
     extraField.style.display = shouldShow ? "block" : "none";
     extraLabel.style.display = shouldShow ? "block" : "none";
+
+    // Optional: disable/enable field when shown
+    extraField.disabled = !shouldShow;
+
+    // Optional: reset field if not needed
+    if (!shouldShow) {
+        extraField.value = "";
+        extraError.textContent = "";
+    }
 }
+
 async function fetchDES(endpoint, payload) {
     const response = await fetch(`${API}/${endpoint}`, {
         method: "POST",
@@ -44,6 +72,16 @@ async function fetchDES(endpoint, payload) {
     if (data.error) throw new Error(data.error);
     return data;
 }
+
+function handleSubmit() {
+    const operation = document.getElementById('operation').value;
+    if (operation === 'encrypt') {
+      handleEncrypt();
+    } else {
+      handleDecrypt();
+    }
+  }
+
 async function handleEncrypt() {
     clearErrors();
     updateExtraFieldVisibility();
@@ -84,6 +122,7 @@ async function handleEncrypt() {
     } finally {
         disableButtons(false);
     }
+    document.getElementById("viewDetailsBtn").style.display = "block";
 }
 
 async function handleDecrypt() {
@@ -125,6 +164,7 @@ async function handleDecrypt() {
     } finally {
         disableButtons(false);
     }
+    document.getElementById("viewDetailsBtn").style.display = "block";
 }
 
 function getCookie(name) {
