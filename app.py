@@ -1,7 +1,7 @@
 import jwt
 from flask import Flask, request, jsonify, render_template, current_app
 from flask_cors import CORS
-
+from flask import session
 from auth import auth_bp
 from des.modes_runner import run_des
 from des.utils import hex_to_text, ensure_hex
@@ -29,6 +29,8 @@ app.register_blueprint(auth_bp)
 # Create tables if they don't exist
 with app.app_context():
     db.create_all()
+
+
 
 
 @app.route('/')
@@ -83,7 +85,9 @@ def encrypt():
                     db.session.commit()
             except jwt.InvalidTokenError:
                 pass
-
+        session["last_mode"] = "encrypt"
+        session["last_round_data"] = rounds[0]
+        session["last_key"] = keys[0]
         # Return the result
         return jsonify(
             encrypted_hex=cipher_hex,
@@ -140,7 +144,9 @@ def decrypt():
                     db.session.commit()
             except jwt.InvalidTokenError:
                 pass
-
+        session["last_mode"] = "decrypt"
+        session["last_round_data"] = rounds[0]
+        session["last_key"] = keys[0]
         # Return decrypted data
         return jsonify(
             decrypted_text=safe_text,
@@ -151,7 +157,24 @@ def decrypt():
     except Exception as e:
         return jsonify(error=str(e)), 500
 
+@app.route("/round1-details")
+def round1_details():
+    from flask import g, render_template
 
+    # Fallbacks if no encryption/decryption done yet
+    mode = session.get("last_mode")
+    round_data = session.get("last_round_data")
+    round_key = session.get("last_key")
+
+    if not mode or not round_data:
+        return "No round data available. Please encrypt or decrypt first."
+
+    return render_template(
+        "round1_details.html",
+        mode=mode,
+        round_data=round_data,
+        round_key=round_key
+    )
 # Run the app on localhost
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
