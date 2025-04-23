@@ -12,6 +12,7 @@ class DES:
         self.PC_2 = PBox.des_shifted_key_permutation()  # PC_2: Permutation after circular shift
         self.P_i = PBox.des_initial_permutation()  # Initial permutation of plaintext
         self.P_f = PBox.des_final_permutation()  # Final permutation after last round
+
         # Rounds 1, 2, 9, 16 do a 1-bit shift, rest do a 2-bit shift
         self.single_shift = {1, 2, 9, 16}
         # Pre-generate round objects and store key expansions
@@ -109,8 +110,8 @@ class DES:
         key_expansions = []
 
         # Apply PC_1 permutation on the 64-bit key then split into two 28-bit halves
-        self.key = self.PC_1.permutate(self.key)
-        l, r = self.key[:28], self.key[28:]
+        PC_1_key = self.PC_1.permutate(self.key)
+        l, r = PC_1_key[:28], PC_1_key[28:]
 
         # Generate 16 subkeys and round objects
         for i in range(1, 17):
@@ -121,11 +122,11 @@ class DES:
             l, r = left_circ_shift(l, shift), left_circ_shift(r, shift)
 
             # Apply PC_2 permutation on the combined 56-bit key to get subkey
-            key = int(self.PC_2.permutate(l + r), base=2)
+            PC_2_key = int(self.PC_2.permutate(l + r), base=2)
             expanded_key = self.bin_to_hex(l + r)  # Save the pre-permutation version for visualization
 
             # Create mixer and round configuration
-            mixer = Mixer.des_mixer(key)
+            mixer = Mixer.des_mixer(PC_2_key)
             cipher = Round.with_swapper(mixer) if i != 16 else Round.without_swapper(mixer)
 
             rounds.append(cipher)

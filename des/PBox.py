@@ -7,7 +7,7 @@ class PBox:
     def __repr__(self) -> str:
         return 'PBox' + str(self.key)
 
-    def permutate(self, sequence: list) -> str:
+    def permutate(self, sequence: str) -> str:
         result = [0] * self.out_degree  # Create result list with default 0s
         for index, value in enumerate(sequence):  # Loop over input bits
             indices = self.key.get(index + 1, [])  # Get output positions 

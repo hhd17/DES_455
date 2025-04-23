@@ -30,63 +30,93 @@ class Mixer:
         self.key = key
 
     def encrypt(self, binary: str, verbose=False):
-        # Split input into left and right halves
-        l = binary[:self.block_size // 2]
-        r = binary[self.block_size // 2:]
+        L0 = binary[:self.block_size // 2]
+        R0 = binary[self.block_size // 2:]
 
-        # Step 1: Initial permutation of right half
-        r1 = self.initial_permutation.permutate(r)
+        # Step 1: Expand R0 using E-table (initial permutation)
+        ER = self.initial_permutation.permutate(R0)
 
-        # Step 2: XOR right half with round key
-        r2 = int_to_bin(
-           self.func(int(r1, base=2), self.key),
-          block_size=self.initial_permutation.out_degree
-        )
+        # Step 2: XOR with round key
+        xored = int_to_bin(self.func(int(ER, 2), self.key), block_size=self.initial_permutation.out_degree)
 
         # Step 3: S-box substitution
-        r3 = ''
         sbox_outputs = []
+        sbox_result = ''
         for i in range(len(self.substitutions)):
-            block = r2[i * self.substitution_block_size : (i + 1) * self.substitution_block_size]
-            substitution_result = self.substitutions[i](block)
-
-            # Format result as 4-bit binary string
-            if not isinstance(substitution_result, str):
-                substitution_result = bin(substitution_result)[2:].zfill(4)
-
-            sbox_outputs.append(substitution_result)
-            r3 += substitution_result
+            block = xored[i * self.substitution_block_size : (i + 1) * self.substitution_block_size]
+            substituted = self.substitutions[i](block)
+            substituted = bin(substituted)[2:].zfill(4) if not isinstance(substituted, str) else substituted
+            sbox_outputs.append(substituted)
+            sbox_result += substituted
 
         # Step 4: P-box permutation
-        r4 = self.final_permutation.permutate(r3)
+        F_result = self.final_permutation.permutate(sbox_result)
 
-        if not isinstance(r4, str):
-            raise TypeError(f'Expected r4 to be a string, but got {type(r4)}')
+        # Step 5: L1 and R1
+        L1 = R0
+        R1 = int_to_bin(int(L0, 2) ^ int(F_result, 2), block_size=self.block_size // 2)
 
-        # Step 5: XOR with left half to get new right
-        new_r = int_to_bin(int(l, base=2) ^ int(r4, base=2), block_size=self.block_size // 2)
+        output = L1 + R1
 
-        # Step 6: Concatenate old right and new right (as L and R are swapped)
-        new_block = r + new_r
-
-        # If verbose mode is on, return a detailed breakdown
         if verbose:
-            return new_block, {
-                "left": l,
-                "right": r,
-                "permuted_right": r1,
-                "xored_with_key": r2,
-                "sbox_outputs": sbox_outputs,
-                "pbox_output": r4,
-                "new_right": new_r,
-                "final_block": new_block
+            return output, {
+                "L0": L0,
+                "R0": R0,
+                "E(R0)": ER,
+                "R0 ⊕ K1": xored,
+                "S-box outputs": sbox_outputs,
+                "P(S)": F_result,
+                "L1": L1,
+                "R1": R1,
+                
             }
 
-        return new_block, r4
+        return output, F_result
 
-    def decrypt(self, binary: str,verbose=False):
-        # Encryption and decryption use the same structure but keys are reversed
-        return self.encrypt(binary,verbose=verbose)
+    def decrypt(self, binary: str, verbose=False):
+        # Feistel: input is R1 + L1 (swapped)
+        R1 = binary[:self.block_size // 2]
+        L1 = binary[self.block_size // 2:]
+
+        # Step 1: Expand R1
+        ER = self.initial_permutation.permutate(R1)
+
+        # Step 2: XOR with round key
+        xored = int_to_bin(self.func(int(ER, 2), self.key), block_size=self.initial_permutation.out_degree)
+
+        # Step 3: S-box substitution
+        sbox_outputs = []
+        sbox_result = ''
+        for i in range(len(self.substitutions)):
+            block = xored[i * self.substitution_block_size : (i + 1) * self.substitution_block_size]
+            substituted = self.substitutions[i](block)
+            substituted = bin(substituted)[2:].zfill(4) if not isinstance(substituted, str) else substituted
+            sbox_outputs.append(substituted)
+            sbox_result += substituted
+
+        # Step 4: P-box permutation
+        F_result = self.final_permutation.permutate(sbox_result)
+
+        # Step 5: Recover L0 and R0
+        R0 = L1
+        L0 = int_to_bin(int(R1, 2) ^ int(F_result, 2), block_size=self.block_size // 2)
+
+        output = L0 + R0
+
+        if verbose:
+            return output, {
+                "R1": R1,
+                "L1": L1,
+                "E(R1)": ER,
+                "R1 ⊕ K1": xored,
+                "S-box outputs": sbox_outputs,
+                "P(S)": F_result,
+                "L0": L0,
+                "R0": R0,
+                
+            }
+
+        return output, F_result
 
     @staticmethod
     def des_mixer(key: int):

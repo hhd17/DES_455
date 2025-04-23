@@ -23,12 +23,13 @@ class Round:
         if verbose:
             # Get detailed breakdown from mixer
             binary, step_details = self.mixer.encrypt(binary, verbose=True)
-        
+
             # Apply swap
             swapped_binary = self.swapper.encrypt(binary)
 
-            # Add swap result to breakdown
-            step_details["after_swap"] = swapped_binary
+            # Add final output to breakdown
+            step_details["Round Output (after swap)"] = swapped_binary
+
             return swapped_binary, step_details
         else:
             # Regular encryption
@@ -40,12 +41,13 @@ class Round:
         if verbose:
             # 1. Undo the swap first
             binary = self.swapper.decrypt(binary)
-
+    
             # 2. Call mixer in verbose mode
             binary, step_details = self.mixer.decrypt(binary, verbose=True)
-
+    
             # 3. Track final result after mixer
-            step_details["after_unswap"] = binary
+            step_details["Round Output (after unswap)"] = binary
+    
             return binary, step_details
         else:
             # Default silent behavior
