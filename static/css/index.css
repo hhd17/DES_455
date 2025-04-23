@@ -146,3 +146,17 @@ h4 {
 .view-details-btn:hover {
   background-color: #005fcc;
 }
+
+.error:empty {
+  display: none;
+  height: 0;
+  margin: 0;
+}
+
+#hexKey {
+  margin-bottom: 0;
+}
+
+.actions {
+  margin-top: calc(var(--gap) / 1);
+}
