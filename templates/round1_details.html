@@ -1,17 +1,18 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="container">
   <h2 class="mb-4">DES Round 1 Breakdown</h2>
 
   <h4>Operation: {{ mode|capitalize }}</h4>
   <p><strong>Round 1 Key:</strong> {{ round_key }}</p>
 
-  <hr>
+  <hr />
   <h4>Round 1 Internal Operations</h4>
   <ul class="debug-output">
-    {% for k, v in round_data.items() %}
+    {% if round_data is mapping %} {% for k, v in round_data.items() %}
     <li><strong>{{ k }}:</strong> {{ v }}</li>
-    {% endfor %}
+    {% endfor %} {% else %}
+    <li>{{ round_data }}</li>
+    {% endif %}
   </ul>
 </div>
 
