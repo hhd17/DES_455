@@ -30,16 +30,16 @@ const renderList = (containerId, title, items, className) => {
         box.innerHTML += `<div class="${className}">Round ${i + 1}: ${item}</div>`;
     });
 
-    // Inject button ONLY inside keyBox
-    if (containerId === "keyBox") {
-        box.innerHTML += `
-            <div class="mt-4 text-center" id="viewDetailsBtn" style="display: none;">
-                <a href="/des/details" class="btn btn-primary">
-                       View Round 1 & Key Details
-                </a>
-            </div>
-        `;
-    }
+    //    // Inject button ONLY inside keyBox
+    //    if (containerId === "keyBox") {
+    //        box.innerHTML += `
+    //            <div class="mt-4 text-center" id="viewDetailsBtn" style="display: none;">
+    //                <a href="/des/details" class="btn btn-primary">
+    //                       View Round 1 & Key Details
+    //                </a>
+    //            </div>
+    //        `;
+    //    }
 };
 
 function updateExtraFieldVisibility() {
@@ -76,11 +76,11 @@ async function fetchDES(endpoint, payload) {
 function handleSubmit() {
     const operation = document.getElementById('operation').value;
     if (operation === 'encrypt') {
-      handleEncrypt();
+        handleEncrypt();
     } else {
-      handleDecrypt();
+        handleDecrypt();
     }
-  }
+}
 
 async function handleEncrypt() {
     clearErrors();
