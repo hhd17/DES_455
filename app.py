@@ -10,7 +10,7 @@ from auth import auth_bp
 from des.modes_runner import run_des
 from des.utils import hex_to_text, ensure_hex
 from extensions import db, bcrypt
-from models import User, History
+from models import History
 
 # Initialize Flask app and config
 app = Flask(__name__)
@@ -33,6 +33,20 @@ app.register_blueprint(auth_bp)
 # Create tables if they don't exist
 with app.app_context():
     db.create_all()
+
+
+@app.context_processor
+def inject_current_user():
+    token = request.cookies.get("token")
+    if not token:
+        return dict(current_user_id=None)
+
+    try:
+        payload = jwt.decode(token, current_app.config["SECRET_KEY"],
+                             algorithms=["HS256"])
+        return dict(current_user_id=payload.get("user_id"))
+    except jwt.InvalidTokenError:
+        return dict(current_user_id=None)
 
 
 @app.route('/')
@@ -75,16 +89,19 @@ def encrypt():
             try:
                 # Decode JWT to get user
                 payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-                user = User.query.filter_by(username=payload['username']).first()
-                if user:
-                    # Save encryption history in the database
-                    h = History(
-                        encrypted_message=cipher_hex,
-                        decrypted_message=message,
-                        user_id=user.id
-                    )
-                    db.session.add(h)
-                    db.session.commit()
+                user_id = payload["user_id"]
+                h = History(
+                    operation='encrypt',
+                    mode=mode,
+                    message_input=message,
+                    key_input=hex_key,
+                    extra_param=extra,
+                    encrypted_message=cipher_hex,
+                    decrypted_message=message,
+                    user_id=user_id
+                )
+                db.session.add(h)
+                db.session.commit()
             except jwt.InvalidTokenError:
                 pass
         session["last_mode"] = "encrypt"
@@ -135,15 +152,19 @@ def decrypt():
         if token:
             try:
                 payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-                user = User.query.filter_by(username=payload['username']).first()
-                if user:
-                    h = History(
-                        encrypted_message=hex_message,
-                        decrypted_message=safe_text,
-                        user_id=user.id
-                    )
-                    db.session.add(h)
-                    db.session.commit()
+                user_id = payload["user_id"]
+                h = History(
+                    operation='decrypt',
+                    mode=mode,
+                    message_input=hex_message,
+                    key_input=hex_key,
+                    extra_param=extra,  # None for ECB
+                    encrypted_message=hex_message,
+                    decrypted_message=safe_text,
+                    user_id=user_id
+                )
+                db.session.add(h)
+                db.session.commit()
             except jwt.InvalidTokenError:
                 pass
         session["last_mode"] = "decrypt"

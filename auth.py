@@ -267,20 +267,20 @@ def delete_account():
 @auth_bp.route('/history', methods=['GET'])
 def get_history():
     # Get JWT token from cookies
-    token = request.cookies.get('token').split()[0]
+    token = request.cookies.get("token")
+    if not token:
+        return redirect(url_for("auth.login"))
 
     try:
         # Decode token to get user info
-        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-        username = payload['username']
+        payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+        user_id = payload["user_id"]
 
-        # Find the user
-        user = User.query.filter_by(username=username).first()
-        if not user:
+        if not user_id:
             return jsonify({'error': 'User not found'}), 404
 
         # Fetch user's encryption/decryption history
-        history = History.query.filter_by(user_id=user.id).all()
+        history = History.query.filter_by(user_id=user_id).all()
 
         # Render history template with user's data
         return render_template('history.html', history=history)

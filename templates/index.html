@@ -41,9 +41,7 @@
     <input id="hexKey" placeholder="Enter key, e.g. 133457799bbcdff1" aria-describedby="keyErr" />
     <p class="error" id="keyErr"></p>
 
-    <label for="extraParam" id="extraLabel">
-      IV / Nonce / Counter (hex) - Required for Decryption
-    </label>
+    <label for="extraParam" id="extraLabel">IV / Nonce / Counter (hex) - Required for Decryption</label>
     <input id="extraParam" placeholder="Enter hex value" />
     <p class="error" id="extraErr"></p>
 
@@ -57,11 +55,15 @@
     </div>
 
     <pre class="result" id="result" aria-live="polite"></pre>
-    <a href="/round1-details" id="viewDetailsBtn" style="display: none;" class="btn btn-secondary mt-3">
-      View Round 1 Breakdown
-    </a>
+
     <div class="box" id="roundBox"></div>
     <div class="box" id="keyBox"></div>
+
+    <!-- now inside .wrap so it hugs the card -->
+    <a id="viewDetailsBtn" href="/round1-details" class="btn view-details-btn"
+      style="display: none; margin: 16px auto 0">
+      View Round 1 Breakdown
+    </a>
   </main>
 
   <script src="{{ url_for('static', filename='js/index.js') }}"></script>

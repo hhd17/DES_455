@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}{% endblock %} | DES App</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
     {% block extra_css %}{% endblock %}
 </head>
@@ -12,30 +13,33 @@
 <body>
     <header>
         <h2>DES App</h2>
-        <nav class="auth-links" id="authLinks">
-            {% set token = request.cookies.get('token') %} {% if request.endpoint ==
-            'auth.login' %}
-            <a href="{{ url_for('index') }}">Use App</a>
-            <a href="{{ url_for('auth.register') }}">Register</a>
+
+        <nav class="auth-links">
+            {% if request.endpoint == 'auth.login' %}
+            <a class="btn" href="{{ url_for('index') }}">Use App</a>
+            <a class="btn" href="{{ url_for('auth.register') }}">Register</a>
 
             {% elif request.endpoint == 'auth.register' %}
-            <a href="{{ url_for('index') }}">Use App</a>
-            <a href="{{ url_for('auth.login') }}">Login</a>
+            <a class="btn" href="{{ url_for('index') }}">Use App</a>
+            <a class="btn" href="{{ url_for('auth.login') }}">Login</a>
 
             {% elif request.endpoint == 'auth.profile' %}
-            <a href="{{ url_for('index') }}">Use App</a>
-            <a href="{{ url_for('auth.logout') }}">Logout</a>
+            <a class="btn" href="{{ url_for('index') }}">Use App</a>
+            <a class="btn" href="{{ url_for('auth.logout') }}">Logout</a>
 
-            {% elif token %} {# any other page while logged-in: small avatar links
-            to profile #} {% set payload = token.split('.') | first %} {% set uid =
-            None %} {% if token %} {% set uid =
-            (token.split('.')[1]|b64decode|safe)|loads.get('user_id') %} {% endif %}
-            <a href="{{ url_for('auth.profile') }}">
-                <img src="{{ url_for('auth.avatar', user_id=uid) }}" class="avatar-thumb" />
-            </a>
+            {% elif current_user_id %} {% if request.endpoint == 'index' %}
+            <a class="btn" href="{{ url_for('history') }}">View History</a>
             {% else %}
-            <a href="{{ url_for('auth.login') }}">Login</a>
-            <a href="{{ url_for('auth.register') }}">Register</a>
+            <a class="btn" href="{{ url_for('index') }}">Use App</a>
+            {% endif %}
+
+            <a href="{{ url_for('auth.profile') }}">
+                <img src="{{ url_for('auth.avatar', user_id=current_user_id) }}" class="avatar-thumb" alt="Profile" />
+            </a>
+
+            {% else %}
+            <a class="btn" href="{{ url_for('auth.login') }}">Login</a>
+            <a class="btn" href="{{ url_for('auth.register') }}">Register</a>
             {% endif %}
         </nav>
     </header>
