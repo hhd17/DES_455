@@ -1,14 +1,17 @@
+import ast
+import json
+
 import jwt
-from flask import (
-    Flask, request, jsonify, render_template, session, current_app
-)
+from flask import Flask, request, jsonify, render_template, current_app
+from flask import session
 from flask_cors import CORS
+
 from auth import auth_bp
 from des.modes_runner import run_des
 from des.utils import ensure_hex, hex_to_text, left_circ_shift
 from des.DES import DES
 from extensions import db, bcrypt
-from models import User, History
+from models import History
 
 # ── Flask App Setup ─────────────────────────────────────────────────────────
 app = Flask(__name__)
@@ -30,7 +33,20 @@ with app.app_context():
     db.create_all()
 
 
-# ── Main Page ───────────────────────────────────────────────────────────────
+@app.context_processor
+def inject_current_user():
+    token = request.cookies.get("token")
+    if not token:
+        return dict(current_user_id=None)
+
+    try:
+        payload = jwt.decode(token, current_app.config["SECRET_KEY"],
+                             algorithms=["HS256"])
+        return dict(current_user_id=payload.get("user_id"))
+    except jwt.InvalidTokenError:
+        return dict(current_user_id=None)
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -67,15 +83,19 @@ def encrypt():
         if token:
             try:
                 payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-                user    = User.query.filter_by(username=payload['username']).first()
-                if user:
-                    h = History(
-                        encrypted_message=cipher_hex,
-                        decrypted_message=message,
-                        user_id=user.id
-                    )
-                    db.session.add(h)
-                    db.session.commit()
+                user_id = payload["user_id"]
+                h = History(
+                    operation='encrypt',
+                    mode=mode,
+                    message_input=message,
+                    key_input=hex_key,
+                    extra_param=extra,
+                    encrypted_message=cipher_hex,
+                    decrypted_message=message,
+                    user_id=user_id
+                )
+                db.session.add(h)
+                db.session.commit()
             except jwt.InvalidTokenError:
                 pass
 
@@ -129,15 +149,19 @@ def decrypt():
         if token:
             try:
                 payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-                user    = User.query.filter_by(username=payload['username']).first()
-                if user:
-                    h = History(
-                        encrypted_message=hex_message,
-                        decrypted_message=safe_text,
-                        user_id=user.id
-                    )
-                    db.session.add(h)
-                    db.session.commit()
+                user_id = payload["user_id"]
+                h = History(
+                    operation='decrypt',
+                    mode=mode,
+                    message_input=hex_message,
+                    key_input=hex_key,
+                    extra_param=extra,  # None for ECB
+                    encrypted_message=hex_message,
+                    decrypted_message=safe_text,
+                    user_id=user_id
+                )
+                db.session.add(h)
+                db.session.commit()
             except jwt.InvalidTokenError:
                 pass
 
@@ -193,6 +217,16 @@ def round1_details():
         'round1_key_hex':      round1_key_hex,
     }
 
+    if isinstance(round_data, str):
+        try:
+            round_data = json.loads(round_data)
+        except ValueError:
+            try:
+                round_data = ast.literal_eval(round_data)
+            except Exception:
+                # give the template *something* iterable
+                round_data = {"value": round_data}
+
     return render_template(
         'round1_details.html',
         mode=         mode,
@@ -202,6 +236,6 @@ def round1_details():
     )
 
 
-# ── Run Server ──────────────────────────────────────────────────────────────
+# Run the app on localhost
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

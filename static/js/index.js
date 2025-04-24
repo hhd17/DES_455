@@ -63,19 +63,17 @@ function updateExtraFieldVisibility() {
 }
 
 async function fetchDES(endpoint, payload) {
-    const response = await fetch(`${API}/${endpoint}`, {
+    return fetch(`${API}/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-    });
-    const data = await response.json();
-    if (data.error) throw new Error(data.error);
-    return data;
+        credentials: "include", // ✅  this line
+    }).then((r) => r.json());
 }
 
 function handleSubmit() {
-    const operation = document.getElementById('operation').value;
-    if (operation === 'encrypt') {
+    const operation = document.getElementById("operation").value;
+    if (operation === "encrypt") {
         handleEncrypt();
     } else {
         handleDecrypt();
@@ -181,7 +179,10 @@ function getCookie(name) {
     const box = $("authLinks");
 
     if (!token) {
-        box.innerHTML = `<a href="/login">Login</a><a href="/register">Register</a>`;
+        box.innerHTML = `
+            <a class="btn" href="/login">Login</a>
+            <a class="btn" href="/register">Register</a>
+        `;
         return;
     }
 
@@ -190,8 +191,10 @@ function getCookie(name) {
         const uid = payload.user_id;
         const pic = `/avatar/${uid}`;
         box.innerHTML = `
-  <a href="/profile"><img src="${pic}" class="avatar-thumb" alt="profile"></a>
-`;
+  <a class="btn" href="/history">View History</a>
+  <a href="/profile">
+      <img src="${pic}" class="avatar-thumb" alt="profile">
+  </a>`;
     } catch {
         box.textContent = "";
     }
