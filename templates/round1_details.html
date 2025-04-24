@@ -1,20 +1,5 @@
-{% extends "base.html" %} {% block content %}
-<div class="container">
-  <h2 class="mb-4">DES Round 1 Breakdown</h2>
-
-  <h4>Operation: {{ mode|capitalize }}</h4>
-  <p><strong>Round 1 Key:</strong> {{ round_key }}</p>
-
-  <hr />
-  <h4>Round 1 Internal Operations</h4>
-  <ul class="debug-output">
-    {% if round_data is mapping %} {% for k, v in round_data.items() %}
-    <li><strong>{{ k }}:</strong> {{ v }}</li>
-    {% endfor %} {% else %}
-    <li>{{ round_data }}</li>
-    {% endif %}
-  </ul>
-</div>
+{% extends "base.html" %}
+{% block content %}
 
 <style>
   .key-grid {
@@ -44,7 +29,7 @@
   <h2 class="mb-4">DES Round 1 Detailed Breakdown</h2>
 
   <p><strong>Mode:</strong> {{ mode|capitalize }}</p>
-  <hr>
+  <hr />
 
   <h4>Key Schedule • Round 1</h4>
   <div class="key-grid">
@@ -69,4 +54,5 @@
     {% endfor %}
   </ul>
 </div>
+
 {% endblock %}
