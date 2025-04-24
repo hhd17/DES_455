@@ -57,9 +57,11 @@
     </div>
 
     <pre class="result" id="result" aria-live="polite"></pre>
-    <a href="/round1-details" id="viewDetailsBtn" style="display: none;" class="btn btn-secondary mt-3">
-      View Round 1 Breakdown
-    </a>
+    <div id="viewDetailsBtn" style="display:none; text-align:center; margin-top:1rem;">
+      <a href="{{ url_for('round1_details') }}" class="btn btn-primary">
+         View Round 1 Breakdown
+      </a>
+    </div>
     <div class="box" id="roundBox"></div>
     <div class="box" id="keyBox"></div>
   </main>
