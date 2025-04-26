@@ -24,6 +24,10 @@ class DES:
     @staticmethod
     def bin_to_hex(bin_str) -> str:
         return hex(int(bin_str, 2))[2:].upper().zfill(16)  # Converts 64-bit binary string to uppercase hex (16 characters)
+    
+    @staticmethod
+    def bin_to_hex_12(bin_str) -> str:
+        return hex(int(bin_str, 2))[2:].upper().zfill(12)  # Converts 64-bit binary string to uppercase hex (12 characters)
 
     def encrypt(self, hex_input: str) -> tuple[str, list[str], list[str]]:
         # 1) Convert hex input to binary and apply initial permutation
@@ -109,8 +113,9 @@ class DES:
         key_expansions = []
 
         # Apply PC_1 permutation on the 64-bit key then split into two 28-bit halves
-        self.key = self.PC_1.permutate(self.key)
-        l, r = self.key[:28], self.key[28:]
+        PC_1_key = self.key
+        PC_1_key = self.PC_1.permutate(self.key)
+        l, r = PC_1_key[:28], PC_1_key[28:]
 
         # Generate 16 subkeys and round objects
         for i in range(1, 17):
@@ -122,7 +127,7 @@ class DES:
 
             # Apply PC_2 permutation on the combined 56-bit key to get subkey
             key = int(self.PC_2.permutate(l + r), base=2)
-            expanded_key = self.bin_to_hex(l + r)  # Save the pre-permutation version for visualization
+            expanded_key = self.bin_to_hex_12(bin(key)[2:].zfill(48))
 
             # Create mixer and round configuration
             mixer = Mixer.des_mixer(key)
