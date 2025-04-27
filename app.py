@@ -199,7 +199,7 @@ def round1_details():
 
     pre_pc2 = C1 + D1
     round1_key_binary = des_obj.PC_2.permutate(pre_pc2)  # 48-bit
-    round1_key_hex = hex(int(round1_key_binary, 2))[2:].upper().zfill(12)
+    round1_key_hex = hex(int(round1_key_binary, 2))[2:].zfill(12)
 
     key_schedule = {
         'original_key_binary': bin_key,

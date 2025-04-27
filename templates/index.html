@@ -38,16 +38,20 @@
     <div class="file-input-wrapper">
       <input id="message" placeholder="Enter plaintext or hex" aria-describedby="msgErr" />
 
-      <span id="pasteIcon" class="upload-icon" title="Paste text" style="right: 38px">
+      <span id="pasteIcon" class="upload-icon" title="Paste text" style="right: 64px">
         <img src="{{ url_for('static', filename='icons/paste.png') }}" alt="Paste" class="icon-img" />
       </span>
-
-      <span id="uploadIcon" class="upload-icon" title="Upload file">
+      
+      <span id="uploadIcon" class="upload-icon" title="Upload file" style="right: 38px">
         <img src="{{ url_for('static', filename='icons/upload.png') }}" alt="Upload" class="icon-img" />
       </span>
+      
+      <span id="clearMsgIcon" class="upload-icon" title="Clear text" style="right: 10px">
+        <img src="{{ url_for('static', filename='icons/clear.png') }}" alt="Clear" class="icon-img" />
+      </span>      
 
-      <span id="clearIcon" class="upload-icon" title="Remove file" style="display: none">
-        <img src="{{ url_for('static', filename='icons/delete.png') }}" alt="Clear" class="icon-img" />
+      <span id="deleteIcon" class="upload-icon" title="Remove file" style="display: none">
+        <img src="{{ url_for('static', filename='icons/delete.png') }}" alt="Delete" class="icon-img" />
       </span>
     </div>
 
@@ -56,10 +60,20 @@
     <label for="hexKey">Key (16 hex chars = 64 bits including parity)</label>
     <div class="file-input-wrapper">
       <input id="hexKey" placeholder="Enter key, e.g. 133457799bbcdff1" aria-describedby="keyErr" />
-      <span id="keyIcon" class="upload-icon" title="Generate random key">
+    
+      <span id="pasteKeyIcon" class="upload-icon" title="Paste key" style="right: 64px">
+        <img src="{{ url_for('static', filename='icons/paste.png') }}" alt="Paste" class="icon-img" />
+      </span>
+    
+      <span id="keyIcon" class="upload-icon" title="Generate random key" style="right: 38px">
         <img src="{{ url_for('static', filename='icons/key.png') }}" alt="Key" class="icon-img" />
       </span>
+    
+      <span id="clearKeyIcon" class="upload-icon" title="Clear key" style="right: 10px">
+        <img src="{{ url_for('static', filename='icons/clear.png') }}" alt="Clear" class="icon-img" />
+      </span>
     </div>
+    
     <p class="error" id="keyErr"></p>
 
     <script>
@@ -75,7 +89,15 @@
     </script>
 
     <label for="extraParam" id="extraLabel">IV / Nonce / Counter (hex) - Required for Decryption</label>
-    <input id="extraParam" placeholder="Enter hex value" />
+    <div class="file-input-wrapper" id="extraWrapper" style="display: none">
+      <input id="extraParam" placeholder="Enter hex value" />
+      <span id="pasteExtraIcon" class="upload-icon" title="Paste text" style="right: 38px">
+        <img src="{{ url_for('static', filename='icons/paste.png') }}" alt="Paste" class="icon-img" />
+      </span>
+      <span id="clearExtraIcon" class="upload-icon" title="Clear text" style="right: 10px">
+        <img src="{{ url_for('static', filename='icons/clear.png') }}" alt="Clear" class="icon-img" />
+      </span>
+    </div>
     <p class="error" id="extraErr"></p>
 
     <div id="generatedExtra" style="display: none">

@@ -23,7 +23,7 @@ class DES:
 
     @staticmethod
     def bin_to_hex(bin_str) -> str:
-        return hex(int(bin_str, 2))[2:].upper().zfill(16)  # Converts 64-bit binary string to uppercase hex (16 chars)
+        return hex(int(bin_str, 2))[2:].zfill(16)
 
     def encrypt(self, hex_input: str) -> tuple[str, list[str], list[str]]:
         # 1) Convert hex input to binary and apply initial permutation

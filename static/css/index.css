@@ -182,7 +182,7 @@ h4 {
 }
 
 .file-input-wrapper input {
-  padding-right: 40px;
+  padding-right: 100px;
 }
 
 .upload-icon {
@@ -209,7 +209,7 @@ h4 {
   opacity: 0.8;
 }
 
-#clearIcon {
+#deleteIcon {
   right: 10px;
 }
 
@@ -218,7 +218,27 @@ h4 {
 }
 
 #pasteIcon {
+  right: 64px;
+}
+
+#pasteKeyIcon {
+  right: 64px;
+}
+
+#uploadIcon {
   right: 38px;
+}
+
+#clearMsgIcon {
+  right: 10px;
+}
+
+#keyIcon {
+  right: 38px;
+}
+
+#clearKeyIcon {
+  right: 10px;
 }
 
 .file-loaded {

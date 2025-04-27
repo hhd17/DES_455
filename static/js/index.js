@@ -5,7 +5,7 @@ const $ = (id) => document.getElementById(id);
 
 const messageBox = $("message");
 const uploadIconBtn = $("uploadIcon");
-const clearIconBtn = $("clearIcon");
+const deleteIconBtn = $("deleteIcon");
 const keyIconBtn = $("keyIcon");
 const pasteIconBtn = $("pasteIcon");
 const extraField = $("extraParam");
@@ -13,6 +13,12 @@ const extraLabel = $("extraLabel");
 const extraError = $("extraErr");
 const generatedExtraBox = $("generatedExtra");
 const extraOutput = $("extraOutput");
+const clearMsgIconBtn = $("clearMsgIcon");
+const clearKeyIconBtn = $("clearKeyIcon");
+const clearExtraIconBtn = $("clearExtraIcon");
+const pasteExtraIconBtn = $("pasteExtraIcon");
+const pasteKeyIconBtn = $("pasteKeyIcon");
+const extraWrapper = $("extraWrapper");
 
 const API = window.location.origin;
 
@@ -24,18 +30,37 @@ const clearErrors = () => {
 
 $("mode").addEventListener("change", updateExtraFieldVisibility);
 $("operation").addEventListener("change", updateExtraFieldVisibility);
-document.addEventListener("DOMContentLoaded", updateExtraFieldVisibility);
+document.addEventListener("DOMContentLoaded", () => {
+    updateExtraFieldVisibility();
+    toggleClearMsgIcon();
+    toggleClearKeyIcon();
+    toggleClearExtraIcon();
+});
+
+function toggleClearMsgIcon() {
+    clearMsgIconBtn.style.display = isFileUpload ? "none" : "inline";
+}
+function toggleClearKeyIcon() {
+    clearKeyIconBtn.style.display = "inline";
+}
+function toggleClearExtraIcon() {
+    clearExtraIconBtn.style.display = extraField.disabled ? "none" : "inline";
+}
 
 function updateExtraFieldVisibility() {
     const mode = $("mode").value;
     const op = $("operation").value;
     const show = op === "decrypt" && mode !== "ECB";
-    extraField.style.display = extraLabel.style.display = show ? "block" : "none";
+    extraWrapper.style.display =
+        extraField.style.display =
+        extraLabel.style.display =
+        show ? "block" : "none";
     extraField.disabled = !show;
     if (!show) {
         extraField.value = "";
         extraError.textContent = "";
     }
+    toggleClearExtraIcon();
 }
 
 const fileInput = document.createElement("input");
@@ -46,18 +71,22 @@ document.body.appendChild(fileInput);
 
 function showUploadIcon() {
     uploadIconBtn.style.display = "inline";
-    clearIconBtn.style.display = "none";
+    deleteIconBtn.style.display = "none";
     pasteIconBtn.style.display = "inline";
+    toggleClearMsgIcon();
 }
-function showClearIcon() {
-    uploadIconBtn.style.display = "none";
-    clearIconBtn.style.display = "inline";
-    pasteIconBtn.style.display = "none";
+function showDeleteIcon() {
+    uploadIconBtn.style.display =
+        pasteIconBtn.style.display =
+        clearMsgIconBtn.style.display =
+        "none";
+    deleteIconBtn.style.display = "inline";
 }
 
 uploadIconBtn.addEventListener("click", () => fileInput.click());
 messageBox.addEventListener("click", () => {
     if (isFileUpload) fileInput.click();
+    toggleClearMsgIcon();
 });
 
 fileInput.addEventListener("change", (e) => {
@@ -71,12 +100,12 @@ fileInput.addEventListener("change", (e) => {
         messageBox.value = `${file.name} uploaded`;
         messageBox.readOnly = true;
         messageBox.classList.add("file-loaded");
-        showClearIcon();
+        showDeleteIcon();
     };
     reader.readAsArrayBuffer(file);
 });
 
-clearIconBtn.addEventListener("click", () => {
+deleteIconBtn.addEventListener("click", () => {
     isFileUpload = false;
     uploadedFileContent = "";
     messageBox.value = "";
@@ -94,6 +123,7 @@ messageBox.addEventListener("input", () => {
         messageBox.classList.remove("file-loaded");
         showUploadIcon();
     }
+    toggleClearMsgIcon();
 });
 
 pasteIconBtn.addEventListener("click", async () => {
@@ -106,8 +136,39 @@ pasteIconBtn.addEventListener("click", async () => {
             messageBox.readOnly = false;
             messageBox.classList.remove("file-loaded");
             showUploadIcon();
+            toggleClearMsgIcon();
         }
     } catch { }
+});
+
+pasteKeyIconBtn.addEventListener("click", async () => {
+    try {
+        const txt = await navigator.clipboard.readText();
+        if (txt) $("hexKey").value = txt;
+    } catch {}
+});
+
+$("hexKey").addEventListener("input", toggleClearKeyIcon);
+extraField.addEventListener("input", toggleClearExtraIcon);
+
+pasteExtraIconBtn.addEventListener("click", async () => {
+    try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+            extraField.value = text;
+            toggleClearExtraIcon();
+        }
+    } catch { }
+});
+
+clearMsgIconBtn.addEventListener("click", () => {
+    messageBox.value = "";
+});
+clearKeyIconBtn.addEventListener("click", () => {
+    $("hexKey").value = "";
+});
+clearExtraIconBtn.addEventListener("click", () => {
+    extraField.value = "";
 });
 
 async function fetchDES(endpoint, payload) {
@@ -129,7 +190,7 @@ const renderList = (id, title, items, cls) => {
         let v = item;
         if (i === 0 && typeof item === "object" && item) {
             v = item["Combined (pre-swap)"] || JSON.stringify(item);
-            if (/^[01]+$/.test(v)) v = parseInt(v, 2).toString(16).toUpperCase();
+            if (/^[01]+$/.test(v)) v = parseInt(v, 2).toString(16).toLowerCase();
         }
         box.innerHTML += `<div class="${cls}">Round ${i + 1}: ${v}</div>`;
     });
