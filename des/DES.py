@@ -91,16 +91,61 @@ class DES:
         # Convert input hex to binary and reverse the final permutation
         binary = self.hex_to_bin(hex_input)
         binary = self.P_f.invert().permutate(binary)
+        
+        # Preserve initial binary for breakdown
+        initial_binary = binary
+        
         round_results = []
-
+        
         # Perform 16 rounds in reverse order for decryption
-        for dec_round in self.rounds[::-1]:  # Reverse order for decryption
-            binary, round_result = dec_round.decrypt(binary)
-            round_results.append(self.bin_to_hex(binary))
-
-        # Apply inverse of the initial permutation to get plaintext
+        for idx, dec_round in enumerate(self.rounds[::-1]):  # Reverse order
+            # For the first round (idx 0), capture detailed breakdown
+            if idx == 0:
+                mixer = dec_round.mixer
+                # Split into L0 / R0
+                L0, R0 = initial_binary[:32], initial_binary[32:]
+                # Expand R0 → 48 bits
+                Expand = mixer.initial_permutation.permutate(R0)
+                # XOR with the round key
+                XOR = int_to_bin(
+                    mixer.func(int(Expand, 2), mixer.key),
+                    block_size=mixer.initial_permutation.out_degree
+                )
+                # S-box substitution
+                sbox_out = ""
+                step = mixer.substitution_block_size
+                for i, box in enumerate(mixer.substitutions):
+                    chunk = XOR[i * step:(i + 1) * step]
+                    res = box(chunk)
+                    if not isinstance(res, str):
+                        res = bin(res)[2:].zfill(4)
+                    sbox_out += res
+                # P-box permutation
+                P_Box = mixer.final_permutation.permutate(sbox_out)
+                # New left half
+                L1 = int_to_bin(int(L0, 2) ^ int(P_Box, 2), block_size=32)
+                
+                # Collect everything into a dict
+                breakdown = {
+                    "L0": L0,
+                    "R0": R0,
+                    "Expand": Expand,
+                    "XOR": XOR,
+                    "S-Box": sbox_out,
+                    "P-Box": P_Box,
+                    "L1": L1,
+                    "Combined (pre-swap)": L1 + R0
+                }
+                round_results.append(breakdown)
+                
+                binary, _ = dec_round.decrypt(binary)
+            else:
+                binary, _ = dec_round.decrypt(binary)
+                round_results.append(self.bin_to_hex(binary))
+        
+        # Apply inverse of the initial permutation
         decrypted_binary = self.P_i.invert().permutate(binary)
-
+        
         return self.bin_to_hex(decrypted_binary), round_results, self.key_expansions
 
     def generate_rounds(self) -> tuple[list[Round], list[str]]:
