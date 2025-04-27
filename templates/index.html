@@ -41,6 +41,19 @@
     <input id="hexKey" placeholder="Enter key, e.g. 133457799bbcdff1" aria-describedby="keyErr" />
     <p class="error" id="keyErr"></p>
 
+    <button type="button" onclick="generateKey()">Generate Random Key</button>
+    <script>
+      function generateKey() {
+        const keyLength = 16; // 16 characters
+        const hexChars = "0123456789ABCDEF";
+        let key = "";
+        for (let i = 0; i < keyLength; i++) {
+          key += hexChars[Math.floor(Math.random() * hexChars.length)];
+        }
+        document.getElementById("hexKey").value = key;
+      }
+    </script>
+
     <label for="extraParam" id="extraLabel">IV / Nonce / Counter (hex) - Required for Decryption</label>
     <input id="extraParam" placeholder="Enter hex value" />
     <p class="error" id="extraErr"></p>
@@ -55,9 +68,9 @@
     </div>
 
     <pre class="result" id="result" aria-live="polite"></pre>
-    <div id="viewDetailsBtn" style="display:none; text-align:center; margin-top:1rem;">
+    <div id="viewDetailsBtn" style="display: none; text-align: center; margin-top: 1rem">
       <a href="{{ url_for('round1_details') }}" class="btn btn-primary">
-         View Round 1 Breakdown
+        View Round 1 Breakdown
       </a>
     </div>
     <div class="box" id="roundBox"></div>
