@@ -65,7 +65,12 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str, extra: str =
             # Decrypt using CBC: decrypt block and XOR with previous ciphertext
             iv = bytes.fromhex(extra) if extra else None
             plain_bytes = modes.decrypt_cbc(msg_bytes, raw_key_bytes, decrypt_block, iv)
-            aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            if len(msg_bytes) > BLOCK_SIZE:
+                # If there's more than one block, use the second block for logging
+                aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            else:
+                # If there's only one block, use that block for logging
+                aux_rounds = des.decrypt(msg_bytes[:BLOCK_SIZE].hex())
             return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
 
     # === CFB (Cipher Feedback) Mode ===
@@ -79,7 +84,12 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str, extra: str =
             # Decrypt using CFB: encrypt IV, then XOR with ciphertext
             iv = bytes.fromhex(extra) if extra else None
             plain_bytes = modes.decrypt_cfb(msg_bytes, raw_key_bytes, encrypt_block, iv)
-            aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            if len(msg_bytes) > BLOCK_SIZE:
+                # If there's more than one block, use the second block for logging
+                aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            else:
+                # If there's only one block, use that block for logging
+                aux_rounds = des.decrypt(msg_bytes[:BLOCK_SIZE].hex())
             return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
 
     # === OFB (Output Feedback) Mode ===
@@ -93,7 +103,12 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str, extra: str =
             # Decrypt using OFB: same operation as encryption
             nonce = bytes.fromhex(extra) if extra else None
             plain_bytes = modes.decrypt_ofb(msg_bytes, raw_key_bytes, encrypt_block, nonce)
-            aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            if len(msg_bytes) > BLOCK_SIZE:
+                # If there's more than one block, use the second block for logging
+                aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            else:
+                # If there's only one block, use that block for logging
+                aux_rounds = des.decrypt(msg_bytes[:BLOCK_SIZE].hex())
             return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
 
     # === CTR (Counter) Mode ===
@@ -107,7 +122,12 @@ def run_des(action: str, mode: str, hex_message: str, hex_key: str, extra: str =
             # Decrypt using CTR: same operation as encryption
             counter = bytes.fromhex(extra) if extra else None
             plain_bytes = modes.decrypt_ctr(msg_bytes, raw_key_bytes, encrypt_block, counter)
-            aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            if len(msg_bytes) > BLOCK_SIZE:
+                # If there's more than one block, use the second block for logging
+                aux_rounds = des.decrypt(msg_bytes[BLOCK_SIZE:BLOCK_SIZE * 2].hex())
+            else:
+                # If there's only one block, use that block for logging
+                aux_rounds = des.decrypt(msg_bytes[:BLOCK_SIZE].hex())
             return plain_bytes.hex(), aux_rounds[1], aux_rounds[2]
 
     # Raise an error for unsupported modes
