@@ -195,16 +195,10 @@ fileInput.addEventListener("change", async (e) => {
 
     const reader = new FileReader();
     reader.onload = () => {
-        const mode = $("mode").value;
-        const operation = $("operation").value;
-
         const result = new Uint8Array(reader.result);
 
-        if (operation === "encrypt") {
-            $("message").value = new TextDecoder().decode(result);
-        } else {
-            $("message").value = [...result].map(b => b.toString(16).padStart(2, "0")).join("");
-        }
+        // Always treat uploaded files as plaintext
+        $("message").value = new TextDecoder().decode(result);
 
         isFileUpload = true; // ✅ Mark that the input came from file
     };
