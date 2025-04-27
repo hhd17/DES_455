@@ -34,12 +34,46 @@
 
     <label for="message">Plaintext for encryption<br />Ciphertext in hex (without 0x) for
       decryption</label>
-    <input id="message" placeholder="Enter plaintext or hex" aria-describedby="msgErr" />
+
+    <div class="file-input-wrapper">
+      <input id="message" placeholder="Enter plaintext or hex" aria-describedby="msgErr" />
+
+      <span id="pasteIcon" class="upload-icon" title="Paste text" style="right: 38px">
+        <img src="{{ url_for('static', filename='icons/paste.png') }}" alt="Paste" class="icon-img" />
+      </span>
+
+      <span id="uploadIcon" class="upload-icon" title="Upload file">
+        <img src="{{ url_for('static', filename='icons/upload.png') }}" alt="Upload" class="icon-img" />
+      </span>
+
+      <span id="clearIcon" class="upload-icon" title="Remove file" style="display: none">
+        <img src="{{ url_for('static', filename='icons/delete.png') }}" alt="Clear" class="icon-img" />
+      </span>
+    </div>
+
     <p class="error" id="msgErr"></p>
 
     <label for="hexKey">Key (16 hex chars = 64 bits including parity)</label>
-    <input id="hexKey" placeholder="Enter key, e.g. 133457799bbcdff1" aria-describedby="keyErr" />
+    <div class="file-input-wrapper">
+      <input id="hexKey" placeholder="Enter key, e.g. 133457799bbcdff1" aria-describedby="keyErr" />
+      <span id="keyIcon" class="upload-icon" title="Generate random key">
+        <img src="{{ url_for('static', filename='icons/key.png') }}" alt="Key" class="icon-img" />
+      </span>
+    </div>
     <p class="error" id="keyErr"></p>
+
+    <button type="button" onclick="generateKey()">Generate Random Key</button>
+     <script>
+       function generateKey() {
+         const keyLength = 16; // 16 characters
+         const hexChars = "0123456789ABCDEF";
+         let key = "";
+         for (let i = 0; i < keyLength; i++) {
+           key += hexChars[Math.floor(Math.random() * hexChars.length)];
+         }
+         document.getElementById("hexKey").value = key;
+       }
+     </script>
 
     <label for="extraParam" id="extraLabel">IV / Nonce / Counter (hex) - Required for Decryption</label>
     <input id="extraParam" placeholder="Enter hex value" />
@@ -55,22 +89,20 @@
     </div>
 
     <pre class="result" id="result" aria-live="polite"></pre>
-    <div id="viewDetailsBtn" style="display:none; text-align:center; margin-top:1rem;">
-      <a href="{{ url_for('round1_details') }}" class="btn btn-primary">
-         View Round 1 Breakdown
-      </a>
-    </div>
+
     <div class="box" id="roundBox"></div>
     <div class="box" id="keyBox"></div>
 
-    <!-- now inside .wrap so it hugs the card -->
-    <a id="viewDetailsBtn" href="/round1-details" class="btn view-details-btn"
-      style="display: none; margin: 16px auto 0">
-      View Round 1 Breakdown
-    </a>
-  </main>
+    <div id="viewDetailsBtn" style="display: none; text-align: center; margin-top: 1rem">
+      <a href="{{ url_for('round1_details') }}" class="btn btn-primary">
+       View Round 1 Breakdown
+     </a>
+    </div>
 
-  <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+
+    <input type="file" id="fileInput" accept=".txt,.bin" style="display: none" />
+  </main>
 </body>
 
 </html>

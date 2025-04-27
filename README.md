@@ -38,12 +38,7 @@ Install the required dependencies:
 pip install -r requirements.txt
 ```
 
-Modify the input in `driver.py` and run it for fast encryption/decryption. Alternatively, use `app.py` for a web-based
-interface:
-
-```bash
-python driver.py
-```
+Run `app.py` for a web-based interface:
 
 ```bash
 python app.py

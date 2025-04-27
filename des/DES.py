@@ -51,7 +51,7 @@ class DES:
                 # expand R0 → 48 bits
                 Expand = mixer.initial_permutation.permutate(R0)
                 # XOR with the round key
-                XOR    = int_to_bin(
+                XOR = int_to_bin(
                     mixer.func(int(Expand, 2), mixer.key),
                     block_size=mixer.initial_permutation.out_degree
                 )
@@ -59,7 +59,7 @@ class DES:
                 sbox_out = ""
                 step = mixer.substitution_block_size
                 for i, box in enumerate(mixer.substitutions):
-                    chunk = XOR[i*step:(i+1)*step]
+                    chunk = XOR[i * step:(i + 1) * step]
                     res = box(chunk)
                     if not isinstance(res, str):
                         res = bin(res)[2:].zfill(4)
@@ -71,13 +71,13 @@ class DES:
     
                 # collect everything into a dict
                 breakdown = {
-                    "L0":     L0,
-                    "R0":     R0,
+                    "L0": L0,
+                    "R0": R0,
                     "Expand": Expand,
-                    "XOR":    XOR,
-                    "S-Box":  sbox_out,
-                    "P-Box":  P_Box,
-                    "L1":     L1,
+                    "XOR": XOR,
+                    "S-Box": sbox_out,
+                    "P-Box": P_Box,
+                    "L1": L1,
                     "Combined (pre-swap)": L1 + R0
                 }
                 round_results.append(breakdown)
@@ -131,7 +131,7 @@ class DES:
 
             # Create mixer and round configuration
             mixer = Mixer.des_mixer(key)
-            cipher = Round.with_swapper(mixer) if i != 16 else Round.without_swapper(mixer)
+            cipher = Round.with_swapper(mixer)
 
             rounds.append(cipher)
             key_expansions.append(expanded_key)
