@@ -1,0 +1,158 @@
+.history-table th {
+    font-weight: 600;
+    padding: 10px 12px;
+}
+
+.wrap {
+    max-width: 1400px;
+    width: 95%;
+}
+
+.history-table {
+    width: 100%;
+    table-layout: auto;
+}
+
+@media (max-width: 480px) {
+    .wrap {
+        width: 100%;
+    }
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    padding: 20px;
+    margin: 0;
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.history-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.history-table {
+    width: 100%;
+    min-width: 780px;
+    border-collapse: collapse;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.history-table th,
+.history-table td {
+    padding: 14px 16px;
+    text-align: left;
+    vertical-align: top;
+    word-break: break-all;
+    line-height: 1.35;
+}
+
+.history-table th:nth-child(4),
+.history-table th:nth-child(5),
+.history-table th:nth-child(6),
+.history-table th:nth-child(7),
+.history-table th:nth-child(8),
+.history-table td:nth-child(4),
+.history-table td:nth-child(5),
+.history-table td:nth-child(6),
+.history-table td:nth-child(7),
+.history-table td:nth-child(8) {
+    font-family: "Courier New", monospace;
+    font-size: 0.92em;
+}
+
+.history-table thead {
+    background-color: #007bff;
+    color: white;
+}
+
+.history-table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.status-pending {
+    color: #ff9800;
+    font-style: italic;
+}
+
+.status-complete {
+    color: #4caf50;
+    font-weight: bold;
+}
+
+@media (max-width: 600px) {
+    .history-wrapper {
+        overflow-x: visible;
+    }
+
+    .history-table thead {
+        display: none;
+    }
+
+    .history-table,
+    .history-table tbody,
+    .history-table tr,
+    .history-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .history-table tr {
+        margin-bottom: 15px;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .history-table td {
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+    }
+
+    .history-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 15px;
+        width: 45%;
+        padding-left: 10px;
+        font-weight: bold;
+        text-align: left;
+        color: #555;
+    }
+}
+
+.history-table th,
+.history-table td {
+    border-right: 1px solid #e3e3e3;
+}
+
+.history-table th:last-child,
+.history-table td:last-child {
+    border-right: none;
+}
+
+.history-table tbody tr {
+    border-bottom: 1px solid #e6e6e6;
+}
+
+.history-table th,
+.history-table td {
+    white-space: nowrap;
+    word-break: normal;
+}
+
+.history-table .wrap {
+    white-space: normal;
+    word-break: break-all;
+}

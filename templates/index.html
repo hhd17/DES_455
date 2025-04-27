@@ -1,145 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DES Encryption App</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 500px;
-            margin: auto;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        input, button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-        }
-        .result {
-            font-weight: bold;
-            margin-top: 10px;
-            word-wrap: break-word;
-            white-space: normal;
-            overflow-wrap: break-word;
-        }
-        .error {
-            color: red;
-            font-size: 14px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DES Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
 </head>
+
 <body>
+  <header>
+    <h2>DES App</h2>
+    <nav class="auth-links" id="authLinks" aria-label="Authentication Links"></nav>
+  </header>
 
-    <h2>DES Encryption & Decryption</h2>
+  <div class="big-title">
+    <h1>Data Encryption Standard (DES) Multi-tool</h1>
+  </div>
 
-    <div class="container">
-        <h3>Encrypt/Decrypt Hexadecimal</h3>
+  <main class="wrap">
+    <h3>Encrypt / Decrypt</h3>
 
-        <label for="hexMessage">Enter Hexadecimal Message (64-bit):</label>
-        <input type="text" id="hexMessage" placeholder="Enter hex message (64-bit)">
-        <p class="error" id="hexMessageError"></p>
+    <label for="operation">Operation</label>
+    <select id="operation" aria-label="Select Operation">
+      <option value="encrypt">Encrypt</option>
+      <option value="decrypt">Decrypt</option>
+    </select>
 
-        <label for="hexKey">Enter Hexadecimal Key (64-bit):</label>
-        <input type="text" id="hexKey" placeholder="Enter hex key (64-bit)">
-        <p class="error" id="hexKeyError"></p>
+    <label for="mode">Mode</label>
+    <select id="mode" aria-label="DES Mode">
+      <option value="ECB">ECB</option>
+      <option value="CBC">CBC</option>
+      <option value="CFB">CFB</option>
+      <option value="OFB">OFB</option>
+      <option value="CTR">CTR</option>
+    </select>
 
-        <button onclick="encryptHex()">Encrypt</button>
-        <button onclick="decryptHex()">Decrypt</button>
+    <label for="message">Plaintext for encryption<br />Ciphertext in hex (without 0x) for
+      decryption</label>
 
-        <p class="result" id="hexResult"></p>
-        <div id="roundResults"></div>
-        <div id="keyExpansions" class="key-expansions"></div>
+    <div class="file-input-wrapper">
+      <input id="message" placeholder="Enter plaintext or hex" aria-describedby="msgErr" />
+
+      <span id="pasteIcon" class="upload-icon" title="Paste text" style="right: 64px">
+        <img src="{{ url_for('static', filename='icons/paste.png') }}" alt="Paste" class="icon-img" />
+      </span>
+      
+      <span id="uploadIcon" class="upload-icon" title="Upload file" style="right: 38px">
+        <img src="{{ url_for('static', filename='icons/upload.png') }}" alt="Upload" class="icon-img" />
+      </span>
+      
+      <span id="clearMsgIcon" class="upload-icon" title="Clear text" style="right: 10px">
+        <img src="{{ url_for('static', filename='icons/clear.png') }}" alt="Clear" class="icon-img" />
+      </span>      
+
+      <span id="deleteIcon" class="upload-icon" title="Remove file" style="display: none">
+        <img src="{{ url_for('static', filename='icons/delete.png') }}" alt="Delete" class="icon-img" />
+      </span>
     </div>
 
+    <p class="error" id="msgErr"></p>
+
+    <label for="hexKey">Key (16 hex chars = 64 bits including parity)</label>
+    <div class="file-input-wrapper">
+      <input id="hexKey" placeholder="Enter key, e.g. 133457799bbcdff1" aria-describedby="keyErr" />
+    
+      <span id="pasteKeyIcon" class="upload-icon" title="Paste key" style="right: 64px">
+        <img src="{{ url_for('static', filename='icons/paste.png') }}" alt="Paste" class="icon-img" />
+      </span>
+    
+      <span id="keyIcon" class="upload-icon" title="Generate random key" style="right: 38px">
+        <img src="{{ url_for('static', filename='icons/key.png') }}" alt="Key" class="icon-img" />
+      </span>
+    
+      <span id="clearKeyIcon" class="upload-icon" title="Clear key" style="right: 10px">
+        <img src="{{ url_for('static', filename='icons/clear.png') }}" alt="Clear" class="icon-img" />
+      </span>
+    </div>
+    
+    <p class="error" id="keyErr"></p>
+
     <script>
-        const API_URL = "http://127.0.0.1:5000";
-  
-        function clearErrors() {
-            document.getElementById("hexMessageError").innerText = "";
-            document.getElementById("hexKeyError").innerText = "";
+      function generateKey() {
+        const keyLength = 16;
+        const hexChars = "0123456789ABCDEF";
+        let key = "";
+        for (let i = 0; i < keyLength; i++) {
+          key += hexChars[Math.floor(Math.random() * hexChars.length)];
         }
-
-        function validateHexInput(input) {
-            return /^[0-9A-Fa-f]+$/.test(input);  // Check if the input contains only hexadecimal characters
-        }
-
-        async function encryptHex() {
-          clearErrors();
-          let hexMessage = document.getElementById("hexMessage").value.trim();
-          let hexKey = document.getElementById("hexKey").value.trim();
-      
-          // Validate the inputs
-          if (!validateHexInput(hexMessage)) {
-              document.getElementById("hexMessageError").innerText = "Invalid hexadecimal message input";
-              return;
-          }
-          if (!validateHexInput(hexKey)) {
-              document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
-              return;
-          }
-      
-          // Send both message and key to the server
-          let response = await fetch(`${API_URL}/encrypt`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ hex_message: hexMessage, hex_key: hexKey })
-          });
-          let data = await response.json();
-          document.getElementById("hexResult").innerText = "Encrypted: " + data.encrypted;
-          displayRoundResults(data.round_results);
-          displayKeyExpansions(data.key_expansions);
+        document.getElementById("hexKey").value = key;
       }
-      
-      async function decryptHex() {
-          clearErrors();
-          let hexMessage = document.getElementById("hexMessage").value.trim();
-          let hexKey = document.getElementById("hexKey").value.trim();
-      
-          // Validate the inputs
-          if (!validateHexInput(hexMessage)) {
-              document.getElementById("hexMessageError").innerText = "Invalid hexadecimal message input";
-              return;
-          }
-          if (!validateHexInput(hexKey)) {
-              document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
-              return;
-          }
-      
-          // Send both message and key to the server
-          let response = await fetch(`${API_URL}/decrypt`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ hex_message: hexMessage, hex_key: hexKey })
-          });
-          let data = await response.json();
-          document.getElementById("hexResult").innerText = "Decrypted: " + data.decrypted;
-          displayRoundResults(data.round_results);
-          displayKeyExpansions(data.key_expansions);
-      }
-
-        function displayRoundResults(roundResults) {
-            let resultDiv = document.getElementById("roundResults");
-            resultDiv.innerHTML = "<h4>Round Results:</h4>";
-            roundResults.forEach((result, index) => {
-                resultDiv.innerHTML += `<p>Round ${index + 1}: ${result}</p>`;
-            });
-        }
-
-        function displayKeyExpansions(keyExpansions) {
-            let keyDiv = document.getElementById("keyExpansions");
-            keyDiv.innerHTML = "<h4>Key Expansions:</h4>";
-            keyExpansions.forEach((key, index) => {
-                keyDiv.innerHTML += `<p>Round ${index + 1} Key: ${key}</p>`;
-            });
-        }
     </script>
-  
+
+    <label for="extraParam" id="extraLabel">IV / Nonce / Counter (hex) - Required for Decryption</label>
+    <div class="file-input-wrapper" id="extraWrapper" style="display: none">
+      <input id="extraParam" placeholder="Enter hex value" />
+      <span id="pasteExtraIcon" class="upload-icon" title="Paste text" style="right: 38px">
+        <img src="{{ url_for('static', filename='icons/paste.png') }}" alt="Paste" class="icon-img" />
+      </span>
+      <span id="clearExtraIcon" class="upload-icon" title="Clear text" style="right: 10px">
+        <img src="{{ url_for('static', filename='icons/clear.png') }}" alt="Clear" class="icon-img" />
+      </span>
+    </div>
+    <p class="error" id="extraErr"></p>
+
+    <div id="generatedExtra" style="display: none">
+      <strong>Generated IV/Nonce/Counter:</strong>
+      <code id="extraOutput"></code>
+    </div>
+
+    <div class="actions">
+      <button id="submitBtn" onclick="handleSubmit()">Submit</button>
+    </div>
+
+    <pre class="result" id="result" aria-live="polite"></pre>
+
+    <div class="box" id="roundBox"></div>
+    <div class="box" id="keyBox"></div>
+
+    <div id="viewDetailsBtn" style="display: none; text-align: center; margin-top: 1rem">
+      <a href="{{ url_for('round1_details') }}" class="btn btn-primary">
+        View Round 1 Breakdown
+      </a>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+
+    <input type="file" id="fileInput" accept=".txt,.bin" style="display: none" />
+  </main>
 </body>
+
 </html>

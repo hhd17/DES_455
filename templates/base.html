@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}{% endblock %} | DES App</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <header>
+        <h2>DES App</h2>
+
+        <nav class="auth-links">
+            {% if request.endpoint == 'auth.login' %}
+            <a class="btn" href="{{ url_for('index') }}">Use App</a>
+            <a class="btn" href="{{ url_for('auth.register') }}">Register</a>
+
+            {% elif request.endpoint == 'auth.register' %}
+            <a class="btn" href="{{ url_for('index') }}">Use App</a>
+            <a class="btn" href="{{ url_for('auth.login') }}">Login</a>
+
+            {% elif request.endpoint == 'auth.profile' %}
+            <a class="btn" href="{{ url_for('index') }}">Use App</a>
+            <a class="btn" href="{{ url_for('auth.logout') }}">Logout</a>
+
+            {% elif current_user_id %} {% if request.endpoint == 'index' %}
+            <a class="btn" href="{{ url_for('history') }}">View History</a>
+            {% else %}
+            <a class="btn" href="{{ url_for('index') }}">Use App</a>
+            {% endif %}
+
+            <a href="{{ url_for('auth.profile') }}">
+                <img src="{{ url_for('auth.avatar', user_id=current_user_id) }}" class="avatar-thumb" alt="Profile" />
+            </a>
+
+            {% else %}
+            <a class="btn" href="{{ url_for('auth.login') }}">Login</a>
+            <a class="btn" href="{{ url_for('auth.register') }}">Register</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="wrap">{% block content %}{% endblock %}</main>
+</body>
+
+</html>
