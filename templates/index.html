@@ -1,145 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DES Encryption App</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 500px;
-            margin: auto;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        input, button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-        }
-        .result {
-            font-weight: bold;
-            margin-top: 10px;
-            word-wrap: break-word;
-            white-space: normal;
-            overflow-wrap: break-word;
-        }
-        .error {
-            color: red;
-            font-size: 14px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DES Demo</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}" />
 </head>
+
 <body>
+  <header>
+    <h2>DES App</h2>
+    <nav class="auth-links" id="authLinks" aria-label="Authentication Links"></nav>
+  </header>
 
-    <h2>DES Encryption & Decryption</h2>
+  <main class="wrap">
+    <h3>Encrypt / Decrypt</h3>
 
-    <div class="container">
-        <h3>Encrypt/Decrypt Hexadecimal</h3>
+    <label for="operation">Operation</label>
+    <select id="operation" aria-label="Select Operation">
+      <option value="encrypt">Encrypt</option>
+      <option value="decrypt">Decrypt</option>
+    </select>
 
-        <label for="hexMessage">Enter Hexadecimal Message (64-bit):</label>
-        <input type="text" id="hexMessage" placeholder="Enter hex message (64-bit)">
-        <p class="error" id="hexMessageError"></p>
+    <label for="mode">Mode</label>
+    <select id="mode" aria-label="DES Mode">
+      <option value="ECB">ECB</option>
+      <option value="CBC">CBC</option>
+      <option value="CFB">CFB</option>
+      <option value="OFB">OFB</option>
+      <option value="CTR">CTR</option>
+    </select>
 
-        <label for="hexKey">Enter Hexadecimal Key (64-bit):</label>
-        <input type="text" id="hexKey" placeholder="Enter hex key (64-bit)">
-        <p class="error" id="hexKeyError"></p>
+    <label for="message">Plaintext for encryption<br />Ciphertext in hex (without 0x) for
+      decryption</label>
+    <input id="message" placeholder="Enter plaintext or hex" aria-describedby="msgErr" />
+    <p class="error" id="msgErr"></p>
 
-        <button onclick="encryptHex()">Encrypt</button>
-        <button onclick="decryptHex()">Decrypt</button>
+    <label for="hexKey">Key (16 hex chars = 64 bits including parity)</label>
+    <input id="hexKey" placeholder="Enter key, e.g. 133457799bbcdff1" aria-describedby="keyErr" />
+    <p class="error" id="keyErr"></p>
 
-        <p class="result" id="hexResult"></p>
-        <div id="roundResults"></div>
-        <div id="keyExpansions" class="key-expansions"></div>
+    <label for="extraParam" id="extraLabel">IV / Nonce / Counter (hex) - Required for Decryption</label>
+    <input id="extraParam" placeholder="Enter hex value" />
+    <p class="error" id="extraErr"></p>
+
+    <div id="generatedExtra" style="display: none">
+      <strong>Generated IV/Nonce/Counter:</strong>
+      <code id="extraOutput"></code>
     </div>
 
-    <script>
-        const API_URL = "http://127.0.0.1:5000";
-  
-        function clearErrors() {
-            document.getElementById("hexMessageError").innerText = "";
-            document.getElementById("hexKeyError").innerText = "";
-        }
+    <div class="actions">
+      <button id="submitBtn" onclick="handleSubmit()">Submit</button>
+    </div>
 
-        function validateHexInput(input) {
-            return /^[0-9A-Fa-f]+$/.test(input);  // Check if the input contains only hexadecimal characters
-        }
+    <pre class="result" id="result" aria-live="polite"></pre>
+    <div id="viewDetailsBtn" style="display:none; text-align:center; margin-top:1rem;">
+      <a href="{{ url_for('round1_details') }}" class="btn btn-primary">
+         View Round 1 Breakdown
+      </a>
+    </div>
+    <div class="box" id="roundBox"></div>
+    <div class="box" id="keyBox"></div>
 
-        async function encryptHex() {
-          clearErrors();
-          let hexMessage = document.getElementById("hexMessage").value.trim();
-          let hexKey = document.getElementById("hexKey").value.trim();
-      
-          // Validate the inputs
-          if (!validateHexInput(hexMessage)) {
-              document.getElementById("hexMessageError").innerText = "Invalid hexadecimal message input";
-              return;
-          }
-          if (!validateHexInput(hexKey)) {
-              document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
-              return;
-          }
-      
-          // Send both message and key to the server
-          let response = await fetch(`${API_URL}/encrypt`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ hex_message: hexMessage, hex_key: hexKey })
-          });
-          let data = await response.json();
-          document.getElementById("hexResult").innerText = "Encrypted: " + data.encrypted;
-          displayRoundResults(data.round_results);
-          displayKeyExpansions(data.key_expansions);
-      }
-      
-      async function decryptHex() {
-          clearErrors();
-          let hexMessage = document.getElementById("hexMessage").value.trim();
-          let hexKey = document.getElementById("hexKey").value.trim();
-      
-          // Validate the inputs
-          if (!validateHexInput(hexMessage)) {
-              document.getElementById("hexMessageError").innerText = "Invalid hexadecimal message input";
-              return;
-          }
-          if (!validateHexInput(hexKey)) {
-              document.getElementById("hexKeyError").innerText = "Invalid hexadecimal key input";
-              return;
-          }
-      
-          // Send both message and key to the server
-          let response = await fetch(`${API_URL}/decrypt`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ hex_message: hexMessage, hex_key: hexKey })
-          });
-          let data = await response.json();
-          document.getElementById("hexResult").innerText = "Decrypted: " + data.decrypted;
-          displayRoundResults(data.round_results);
-          displayKeyExpansions(data.key_expansions);
-      }
+    <!-- now inside .wrap so it hugs the card -->
+    <a id="viewDetailsBtn" href="/round1-details" class="btn view-details-btn"
+      style="display: none; margin: 16px auto 0">
+      View Round 1 Breakdown
+    </a>
+  </main>
 
-        function displayRoundResults(roundResults) {
-            let resultDiv = document.getElementById("roundResults");
-            resultDiv.innerHTML = "<h4>Round Results:</h4>";
-            roundResults.forEach((result, index) => {
-                resultDiv.innerHTML += `<p>Round ${index + 1}: ${result}</p>`;
-            });
-        }
-
-        function displayKeyExpansions(keyExpansions) {
-            let keyDiv = document.getElementById("keyExpansions");
-            keyDiv.innerHTML = "<h4>Key Expansions:</h4>";
-            keyExpansions.forEach((key, index) => {
-                keyDiv.innerHTML += `<p>Round ${index + 1} Key: ${key}</p>`;
-            });
-        }
-    </script>
-  
+  <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
+
 </html>

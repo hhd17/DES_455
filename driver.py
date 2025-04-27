@@ -1,7 +1,7 @@
 from des import DES
 
-plaintext = '123456'
-des = DES(key='193')
+plaintext = '02468aceeca86420'
+des = DES(key='0f1571c947d9e859')
 
 enc_text, enc_round_results, enc_key_expansions = des.encrypt(plaintext)
 dec_text, dec_round_results, dec_key_expansions = des.decrypt(enc_text)

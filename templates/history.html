@@ -1,0 +1,53 @@
+{% extends "base.html" %} {% block title %}History{% endblock %} {% block
+extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/history.css') }}" />
+{% endblock %} {% block content %}
+<h2>Your Encryption / Decryption History</h2>
+
+{% if history %}
+<div class="history-wrapper">
+  <table class="history-table">
+    <thead>
+      <tr>
+        <th>Timestamp (UTC)</th>
+        <th>Operation</th>
+        <th>Mode</th>
+        <th>Input (P/T or Hex)</th>
+        <th>Key</th>
+        <th>IV / Nonce / Ctr</th>
+        <th>Encrypted Hex</th>
+        <th>Decrypted</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for row in history %}
+      <tr>
+        <td data-label="Timestamp">
+          {{ row.timestamp_utc.strftime('%Y-%m-%d %H:%M:%S') }}
+        </td>
+        <td data-label="Op">{{ row.operation }}</td>
+        <td data-label="Mode">{{ row.mode }}</td>
+
+        <td class="wrap" data-label="Input">{{ row.message_input }}</td>
+        <td data-label="Key">{{ row.key_input }}</td>
+        <td class="wrap" data-label="IV">{{ row.extra_param or '—' }}</td>
+
+        <td class="wrap" data-label="Enc">
+          {{ row.encrypted_message or '—' }}
+        </td>
+        <td class="wrap" data-label="Dec">
+          {% if row.decrypted_message %}
+          <span class="status-complete">{{ row.decrypted_message }}</span>
+          {% else %}
+          <span class="status-pending">Not decrypted yet</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p style="text-align: center; color: #777">No history available.</p>
+{% endif %} {% endblock %}

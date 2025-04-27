@@ -1,0 +1,16 @@
+{% extends "base.html" %} {% block title %}Register{% endblock %} {% block
+content %}
+<h3>Register</h3>
+
+<form method="POST" action="{{ url_for('auth.register') }}">
+  <input type="text" name="username" placeholder="Username" required />
+  <input type="password" name="password" placeholder="Password" required
+    title="≥8 chars with upper, lower, digit and symbol" />
+  <input type="password" name="confirm" placeholder="Confirm Password" required />
+  <button type="submit">Create Account</button>
+
+  {% if error %}
+  <p class="error">{{ error }}</p>
+  {% endif %}
+</form>
+{% endblock %}

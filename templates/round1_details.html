@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .key-grid {
+    background: #f9f9f9;
+    padding: 1em;
+    border-radius: 6px;
+    margin-bottom: 1.5em;
+    font-family: monospace;
+  }
+  .key-grid div {
+    margin: 0.3em 0;
+  }
+  .debug-output li {
+    word-break: break-word;
+    font-family: monospace;
+    white-space: normal;
+    margin-bottom: 0.5em;
+  }
+  .debug-output code {
+    background: #f0f0f0;
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+  }
+</style>
+
+<div class="container">
+  <h2 class="mb-4">DES Round 1 Detailed Breakdown</h2>
+
+  <p><strong>Mode:</strong> {{ mode|capitalize }}</p>
+  <hr />
+
+  <h4>Key Schedule • Round 1</h4>
+  <div class="key-grid">
+    <div><strong>Original Key (binary):</strong> {{ key_schedule.original_key_binary }}</div>
+    <div><strong>PC-1 Output (56-bit):</strong> {{ key_schedule.pc1_output }}</div>
+    <div><strong>C₀:</strong> {{ key_schedule.C0 }}</div>
+    <div><strong>D₀:</strong> {{ key_schedule.D0 }}</div>
+    <div><strong>C₁ (after shift):</strong> {{ key_schedule.C1 }}</div>
+    <div><strong>D₁ (after shift):</strong> {{ key_schedule.D1 }}</div>
+    <div><strong>Pre-PC2 (C₁‖D₁):</strong> {{ key_schedule.pre_pc2 }}</div>
+    <div><strong>Round-1 Key (binary):</strong> {{ key_schedule.round1_key_binary }}</div>
+    <div><strong>Round-1 Key (hex):</strong> <code>{{ key_schedule.round1_key_hex }}</code></div>
+  </div>
+
+  <h4>DES Operations • Round 1</h4>
+  <ul class="debug-output">
+    {% for step, bits in round_data.items() %}
+      <li>
+        <strong>{{ step }}:</strong>
+        <code>{{ bits }}</code>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% endblock %}
