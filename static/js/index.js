@@ -26,6 +26,34 @@ $("mode").addEventListener("change", updateExtraFieldVisibility);
 $("operation").addEventListener("change", updateExtraFieldVisibility);
 document.addEventListener("DOMContentLoaded", updateExtraFieldVisibility);
 
+<<<<<<< HEAD
+=======
+const writeResult = (text) => ($("result").textContent = text);
+
+const renderList = (containerId, title, items, className) => {
+    const box = $(containerId);
+    box.innerHTML = items.length ? `<h4>${title}</h4>` : "";
+
+    items.forEach((item, i) => {
+        let displayValue = item;
+
+        // Special handling for first round which is an object
+        if (i === 0 && typeof item === "object" && item !== null) {
+            // Use the "Combined (pre-swap)" value or any appropriate value
+            displayValue = item["Combined (pre-swap)"] || JSON.stringify(item);
+
+            // If the value is binary, convert to hex for display consistency
+            if (displayValue && displayValue.match(/^[01]+$/)) {
+                displayValue = parseInt(displayValue, 2).toString(16).toUpperCase();
+            }
+        }
+
+        box.innerHTML += `<div class="${className}">Round ${i + 1
+            }: ${displayValue}</div>`;
+    });
+};
+
+>>>>>>> 92bd491e1af34b35bcf18dc96a249938ad886fb1
 function updateExtraFieldVisibility() {
     const mode = $("mode").value;
     const op = $("operation").value;

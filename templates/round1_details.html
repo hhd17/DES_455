@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 {% extends "base.html" %} {% block title %}Round 1 Details{% endblock %} {%block extra_css %}
+=======
+{% extends "base.html" %} {% block content %}
+
+>>>>>>> 92bd491e1af34b35bcf18dc96a249938ad886fb1
 <style>
   .key-grid {
     background: #f9f9f9;
@@ -15,11 +20,14 @@
     word-break: break-all;
   }
 
+<<<<<<< HEAD
   .debug-output {
     list-style: none;
     padding-left: 0;
   }
 
+=======
+>>>>>>> 92bd491e1af34b35bcf18dc96a249938ad886fb1
   .debug-output li {
     font-family: monospace;
     font-size: 0.9em;
@@ -59,6 +67,7 @@
 
 <hr />
 
+<<<<<<< HEAD
 <h4 class="section-title">Key Schedule</h4>
 <div class="key-grid">
   <div>
@@ -81,6 +90,41 @@
     <strong>Round-1 Key (hex):</strong>
     <code>{{ key_schedule.round1_key_hex }}</code>
   </div>
+=======
+  <h4>Key Schedule • Round 1</h4>
+  <div class="key-grid">
+    <div>
+      <strong>Original Key (binary):</strong> {{
+      key_schedule.original_key_binary }}
+    </div>
+    <div>
+      <strong>PC-1 Output (56-bit):</strong> {{ key_schedule.pc1_output }}
+    </div>
+    <div><strong>C₀:</strong> {{ key_schedule.C0 }}</div>
+    <div><strong>D₀:</strong> {{ key_schedule.D0 }}</div>
+    <div><strong>C₁ (after shift):</strong> {{ key_schedule.C1 }}</div>
+    <div><strong>D₁ (after shift):</strong> {{ key_schedule.D1 }}</div>
+    <div><strong>Pre-PC2 (C₁‖D₁):</strong> {{ key_schedule.pre_pc2 }}</div>
+    <div>
+      <strong>Round-1 Key (binary):</strong> {{ key_schedule.round1_key_binary
+      }}
+    </div>
+    <div>
+      <strong>Round-1 Key (hex):</strong>
+      <code>{{ key_schedule.round1_key_hex }}</code>
+    </div>
+  </div>
+
+  <h4>DES Operations • Round 1</h4>
+  <ul class="debug-output">
+    {% for step, bits in round_data.items() %}
+    <li>
+      <strong>{{ step }}:</strong>
+      <code>{{ bits }}</code>
+    </li>
+    {% endfor %}
+  </ul>
+>>>>>>> 92bd491e1af34b35bcf18dc96a249938ad886fb1
 </div>
 
 <h4 class="section-title">DES Operations - Round 1</h4>
