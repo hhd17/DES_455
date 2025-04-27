@@ -1,3 +1,4 @@
+let isFileUpload = false;
 const $ = (id) => document.getElementById(id);
 const extraField = $("extraParam");
 const extraLabel = $("extraLabel");
@@ -18,6 +19,9 @@ $("operation").addEventListener("change", updateExtraFieldVisibility);
 const disableButtons = (disabled) => {
     $("submitBtn").disabled = disabled;
 };
+$("message").addEventListener("input", () => {
+    isFileUpload = false;
+});
 document.addEventListener("DOMContentLoaded", updateExtraFieldVisibility);
 
 const writeResult = (text) => ($("result").textContent = text);
@@ -106,6 +110,9 @@ async function handleEncrypt() {
             mode,
         });
         writeResult(`Encrypted (hex):\n${result.encrypted_hex}`);
+        if (isFileUpload) {
+            downloadTextFile(result.encrypted_hex, `encrypted_${Date.now()}.txt`);
+        }
         if (result.extra) {
             generatedExtraBox.style.display = "block";
             extraOutput.textContent = result.extra;
@@ -155,6 +162,9 @@ async function handleDecrypt() {
         writeResult(
             `Decrypted (utf‑8):\n${result.decrypted_text}\n\nHex:\n${result.decrypted_hex}`
         );
+        if (isFileUpload) {
+            downloadTextFile(result.decrypted_text, `decrypted_${Date.now()}.txt`);
+        }
         renderList("roundBox", "Round Results", result.round_results, "round");
         renderList("keyBox", "Key Expansions", result.key_expansions, "key");
     } catch (e) {
@@ -166,6 +176,50 @@ async function handleDecrypt() {
     }
     document.getElementById("viewDetailsBtn").style.display = "block";
 }
+
+const fileInput = document.createElement("input");
+fileInput.type = "file";
+fileInput.accept = ".txt,.bin";
+fileInput.style.display = "none";
+document.body.appendChild(fileInput);
+
+// Add upload buttons dynamically
+
+const uploadMessageBtn = $("uploadFileBtn");
+
+uploadMessageBtn.addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        const mode = $("mode").value;
+        const operation = $("operation").value;
+
+        const result = new Uint8Array(reader.result);
+
+        if (operation === "encrypt") {
+            $("message").value = new TextDecoder().decode(result);
+        } else {
+            $("message").value = [...result].map(b => b.toString(16).padStart(2, "0")).join("");
+        }
+
+        isFileUpload = true; // ✅ Mark that the input came from file
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+function downloadTextFile(content, filename) {
+    const blob = new Blob([content], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
 
 function getCookie(name) {
     return (

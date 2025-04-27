@@ -32,27 +32,31 @@
       <option value="CTR">CTR</option>
     </select>
 
-    <label for="message">Plaintext for encryption<br />Ciphertext in hex (without 0x) for
-      decryption</label>
+    <label for="message">Plaintext for encryption<br />Ciphertext in hex (without 0x) for decryption</label>
     <input id="message" placeholder="Enter plaintext or hex" aria-describedby="msgErr" />
     <p class="error" id="msgErr"></p>
+
+    <!-- New Upload Button for Files -->
+    <button type="button" id="uploadFileBtn" class="btn" style="margin-top: 0.5rem;">Upload File for Message</button>
 
     <label for="hexKey">Key (16 hex chars = 64 bits including parity)</label>
     <input id="hexKey" placeholder="Enter key, e.g. 133457799bbcdff1" aria-describedby="keyErr" />
     <p class="error" id="keyErr"></p>
 
     <button type="button" onclick="generateKey()">Generate Random Key</button>
+
     <script>
       function generateKey() {
-          const keyLength = 16; // 16 characters
-          const hexChars = "0123456789ABCDEF";
-          let key = "";
-          for (let i = 0; i < keyLength; i++) {
-              key += hexChars[Math.floor(Math.random() * hexChars.length)];
-          }
-          document.getElementById("hexKey").value = key; 
+        const keyLength = 16; // 16 characters
+        const hexChars = "0123456789ABCDEF";
+        let key = "";
+        for (let i = 0; i < keyLength; i++) {
+          key += hexChars[Math.floor(Math.random() * hexChars.length)];
+        }
+        document.getElementById("hexKey").value = key;
       }
-      </script>
+    </script>
+
     <label for="extraParam" id="extraLabel">IV / Nonce / Counter (hex) - Required for Decryption</label>
     <input id="extraParam" placeholder="Enter hex value" />
     <p class="error" id="extraErr"></p>
@@ -67,15 +71,17 @@
     </div>
 
     <pre class="result" id="result" aria-live="polite"></pre>
+
     <div id="viewDetailsBtn" style="display:none; text-align:center; margin-top:1rem;">
       <a href="{{ url_for('round1_details') }}" class="btn btn-primary">
-         View Round 1 Breakdown
+        View Round 1 Breakdown
       </a>
     </div>
+
     <div class="box" id="roundBox"></div>
     <div class="box" id="keyBox"></div>
 
-    <!-- now inside .wrap so it hugs the card -->
+    <!-- Optional second View Details button (you had two) -->
     <a id="viewDetailsBtn" href="/round1-details" class="btn view-details-btn"
       style="display: none; margin: 16px auto 0">
       View Round 1 Breakdown
@@ -83,6 +89,10 @@
   </main>
 
   <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+
+  <!-- Hidden File Input (for file upload functionality) -->
+  <input type="file" id="fileInput" accept=".txt,.bin" style="display: none;" />
+
 </body>
 
 </html>

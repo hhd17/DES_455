@@ -1,5 +1,6 @@
 import ast
 import json
+import os
 
 import jwt
 from flask import Flask, request, jsonify, render_template, current_app
@@ -12,6 +13,7 @@ from des.utils import ensure_hex, hex_to_text, left_circ_shift
 from des.DES import DES
 from extensions import db, bcrypt
 from models import History
+from werkzeug.utils import secure_filename
 
 # ── Flask App Setup ─────────────────────────────────────────────────────────
 app = Flask(__name__)
@@ -234,6 +236,116 @@ def round1_details():
         round_key=    round1_key_hex,
         key_schedule= key_schedule
     )
+
+# Temporary folder for uploads
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
+
+# ── Encrypt File Endpoint ───────────────────────────────────────────────────
+@app.route('/encrypt_file', methods=['POST'])
+def encrypt_file():
+    if 'file' not in request.files:
+        return jsonify(error='No file part'), 400
+    
+    file = request.files['file']
+    hex_key = request.form.get('hex_key', '')
+    mode = request.form.get('mode', 'ECB').upper()
+
+    if not file or file.filename == '':
+        return jsonify(error='No selected file'), 400
+    if not hex_key:
+        return jsonify(error='hex_key is required'), 400
+    if len(hex_key) != 16 or any(c not in '0123456789abcdefABCDEF' for c in hex_key):
+        return jsonify(error='DES key must be 16 hex chars'), 400
+
+    try:
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        with open(filepath, 'rb') as f:
+            file_bytes = f.read()
+
+        hex_message = file_bytes.hex()
+
+        # Encrypt
+        result = run_des('encrypt', mode, hex_message, hex_key)
+        if len(result) == 3:
+            cipher_hex, rounds, keys = result
+        else:
+            cipher_hex, extra, rounds, keys = result
+
+        cipher_bytes = bytes.fromhex(cipher_hex)
+
+        # Save encrypted file
+        encrypted_filename = f'encrypted_{filename}'
+        encrypted_filepath = os.path.join(app.config['UPLOAD_FOLDER'], encrypted_filename)
+        with open(encrypted_filepath, 'wb') as f:
+            f.write(cipher_bytes)
+
+        return jsonify(
+            message='File encrypted successfully',
+            encrypted_file=encrypted_filename,
+            round_results=rounds,
+            key_expansions=keys
+        )
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+
+# ── Decrypt File Endpoint ───────────────────────────────────────────────────
+@app.route('/decrypt_file', methods=['POST'])
+def decrypt_file():
+    if 'file' not in request.files:
+        return jsonify(error='No file part'), 400
+    
+    file = request.files['file']
+    hex_key = request.form.get('hex_key', '')
+    mode = request.form.get('mode', 'ECB').upper()
+    extra = request.form.get('extra', None)
+
+    if not file or file.filename == '':
+        return jsonify(error='No selected file'), 400
+    if not hex_key:
+        return jsonify(error='hex_key is required'), 400
+    if len(hex_key) != 16 or any(c not in '0123456789abcdefABCDEF' for c in hex_key):
+        return jsonify(error='DES key must be 16 hex chars'), 400
+
+    try:
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        with open(filepath, 'rb') as f:
+            file_bytes = f.read()
+
+        hex_message = file_bytes.hex()
+
+        # Decrypt
+        if extra:
+            plain_hex, rounds, keys = run_des('decrypt', mode, hex_message, hex_key, extra)
+        else:
+            plain_hex, rounds, keys = run_des('decrypt', mode, hex_message, hex_key)
+
+        plain_bytes = bytes.fromhex(plain_hex)
+
+        # Save decrypted file
+        decrypted_filename = f'decrypted_{filename}'
+        decrypted_filepath = os.path.join(app.config['UPLOAD_FOLDER'], decrypted_filename)
+        with open(decrypted_filepath, 'wb') as f:
+            f.write(plain_bytes)
+
+        return jsonify(
+            message='File decrypted successfully',
+            decrypted_file=decrypted_filename,
+            round_results=rounds,
+            key_expansions=keys
+        )
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
 
 
 # Run the app on localhost
