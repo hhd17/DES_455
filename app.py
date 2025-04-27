@@ -3,27 +3,24 @@ import json
 import os
 
 import jwt
-from flask import Flask, request, jsonify, render_template, current_app
-from flask import session
+from flask import Flask, request, jsonify, render_template, current_app, session
 from flask_cors import CORS
-
-from auth import auth_bp
-from des.modes_runner import run_des
-from des.utils import ensure_hex, hex_to_text, left_circ_shift
-from des.DES import DES
-from extensions import db, bcrypt
-from models import History
 from werkzeug.utils import secure_filename
 
-# ── Flask App Setup ─────────────────────────────────────────────────────────
+from auth import auth_bp
+from des.DES import DES
+from des.modes_runner import run_des
+from des.utils import ensure_hex, hex_to_text, left_circ_shift
+from extensions import db, bcrypt
+from models import History
+
 app = Flask(__name__)
 app.config.update(
     SQLALCHEMY_DATABASE_URI='sqlite:///users.db',
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     SECRET_KEY='supersecretkey',
 )
-CORS(app, resources={r'/*': {'origins': 'http://localhost:5000'}},
-     supports_credentials=True)
+CORS(app, resources={r'/*': {'origins': 'http://localhost:5000'}}, supports_credentials=True)
 
 db.init_app(app)
 bcrypt.init_app(app)
@@ -54,13 +51,12 @@ def index():
     return render_template('index.html')
 
 
-# ── Encrypt Endpoint ────────────────────────────────────────────────────────
 @app.route('/encrypt', methods=['POST'])
 def encrypt():
-    data    = request.get_json()
+    data = request.get_json()
     message = data.get('message', '')
     hex_key = data.get('hex_key', '')
-    mode    = data.get('mode', 'ECB').upper()
+    mode = data.get('mode', 'ECB').upper()
 
     # Validate inputs
     if not message or not hex_key:
@@ -102,28 +98,27 @@ def encrypt():
                 pass
 
         # Store round‐1 data & key for detail view
-        session['last_mode']       = 'encrypt'
+        session['last_mode'] = 'encrypt'
         session['last_round_data'] = rounds[0]
-        session['last_hex_key']    = hex_key
-        session['last_key']        = keys[0]
+        session['last_hex_key'] = hex_key
+        session['last_key'] = keys[0]
 
         return jsonify(
-            encrypted_hex = cipher_hex,
-            round_results = rounds,
-            key_expansions= keys,
-            extra         = extra
+            encrypted_hex=cipher_hex,
+            round_results=rounds,
+            key_expansions=keys,
+            extra=extra
         )
     except Exception as e:
         return jsonify(error=str(e)), 500
 
 
-# ── Decrypt Endpoint ────────────────────────────────────────────────────────
 @app.route('/decrypt', methods=['POST'])
 def decrypt():
-    data        = request.get_json(force=True)
+    data = request.get_json(force=True)
     hex_message = data.get('hex_message', '')
-    hex_key     = data.get('hex_key', '')
-    mode        = data.get('mode', 'ECB').upper()
+    hex_key = data.get('hex_key', '')
+    mode = data.get('mode', 'ECB').upper()
 
     # Validate inputs
     if not hex_message or not hex_key:
@@ -143,8 +138,8 @@ def decrypt():
 
         # Try converting to printable text
         text_guess = hex_to_text(plain_hex)
-        safe_text  = text_guess if all(c.isprintable() or c.isspace() for c in text_guess) \
-                     else '[Non-text binary data]'
+        safe_text = text_guess if all(c.isprintable() or c.isspace() for c in text_guess) \
+            else '[Non-text binary data]'
 
         # Save to history if user is logged in
         token = request.cookies.get('token')
@@ -168,55 +163,54 @@ def decrypt():
                 pass
 
         # Store round‐1 data & key for detail view
-        session['last_mode']       = 'decrypt'
+        session['last_mode'] = 'decrypt'
         session['last_round_data'] = rounds[0]
-        session['last_hex_key']    = hex_key
-        session['last_key']        = keys[0]
+        session['last_hex_key'] = hex_key
+        session['last_key'] = keys[0]
 
         return jsonify(
-            decrypted_text = safe_text,
-            decrypted_hex  = plain_hex,
-            round_results  = rounds,
-            key_expansions = keys
+            decrypted_text=safe_text,
+            decrypted_hex=plain_hex,
+            round_results=rounds,
+            key_expansions=keys
         )
     except Exception as e:
         return jsonify(error=str(e)), 500
 
 
-# ── Round 1 Detail Page ────────────────────────────────────────────────────
 @app.route('/round1-details')
 def round1_details():
-    mode       = session.get('last_mode')
+    mode = session.get('last_mode')
     round_data = session.get('last_round_data')
-    hex_key    = session.get('last_hex_key')
+    hex_key = session.get('last_hex_key')
 
     if not (mode and round_data and hex_key):
         return "No round data available. Please encrypt or decrypt first.", 400
 
     # Rebuild the key‐schedule through round 1
-    des_obj    = DES(hex_key)
-    bin_key    = DES.hex_to_bin(hex_key)          # 64-bit
-    pc1_out    = des_obj.PC_1.permutate(bin_key)  # 56-bit
-    C0, D0     = pc1_out[:28], pc1_out[28:]       # split halves
+    des_obj = DES(hex_key)
+    bin_key = DES.hex_to_bin(hex_key)  # 64-bit
+    pc1_out = des_obj.PC_1.permutate(bin_key)  # 56-bit
+    C0, D0 = pc1_out[:28], pc1_out[28:]  # split halves
 
     # Round-1 shift (always single-bit)
     C1 = left_circ_shift(C0, 1)
     D1 = left_circ_shift(D0, 1)
 
-    pre_pc2           = C1 + D1
-    round1_key_binary = des_obj.PC_2.permutate(pre_pc2)          # 48-bit
-    round1_key_hex    = hex(int(round1_key_binary, 2))[2:].upper().zfill(12)
+    pre_pc2 = C1 + D1
+    round1_key_binary = des_obj.PC_2.permutate(pre_pc2)  # 48-bit
+    round1_key_hex = hex(int(round1_key_binary, 2))[2:].upper().zfill(12)
 
     key_schedule = {
         'original_key_binary': bin_key,
-        'pc1_output':          pc1_out,
-        'C0':                  C0,
-        'D0':                  D0,
-        'C1':                  C1,
-        'D1':                  D1,
-        'pre_pc2':             pre_pc2,
-        'round1_key_binary':   round1_key_binary,
-        'round1_key_hex':      round1_key_hex,
+        'pc1_output': pc1_out,
+        'C0': C0,
+        'D0': D0,
+        'C1': C1,
+        'D1': D1,
+        'pre_pc2': pre_pc2,
+        'round1_key_binary': round1_key_binary,
+        'round1_key_hex': round1_key_hex,
     }
 
     if isinstance(round_data, str):
@@ -231,11 +225,12 @@ def round1_details():
 
     return render_template(
         'round1_details.html',
-        mode=         mode,
-        round_data=   round_data,
-        round_key=    round1_key_hex,
-        key_schedule= key_schedule
+        mode=mode,
+        round_data=round_data,
+        round_key=round1_key_hex,
+        key_schedule=key_schedule
     )
+
 
 # Temporary folder for uploads
 UPLOAD_FOLDER = 'uploads'
@@ -243,12 +238,12 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
 
-# ── Encrypt File Endpoint ───────────────────────────────────────────────────
+
 @app.route('/encrypt_file', methods=['POST'])
 def encrypt_file():
     if 'file' not in request.files:
         return jsonify(error='No file part'), 400
-    
+
     file = request.files['file']
     hex_key = request.form.get('hex_key', '')
     mode = request.form.get('mode', 'ECB').upper()
@@ -295,12 +290,11 @@ def encrypt_file():
         return jsonify(error=str(e)), 500
 
 
-# ── Decrypt File Endpoint ───────────────────────────────────────────────────
 @app.route('/decrypt_file', methods=['POST'])
 def decrypt_file():
     if 'file' not in request.files:
         return jsonify(error='No file part'), 400
-    
+
     file = request.files['file']
     hex_key = request.form.get('hex_key', '')
     mode = request.form.get('mode', 'ECB').upper()
@@ -345,7 +339,6 @@ def decrypt_file():
         )
     except Exception as e:
         return jsonify(error=str(e)), 500
-
 
 
 # Run the app on localhost

@@ -23,23 +23,23 @@ class DES:
 
     @staticmethod
     def bin_to_hex(bin_str) -> str:
-        return hex(int(bin_str, 2))[2:].upper().zfill(16)  # Converts 64-bit binary string to uppercase hex (16 characters)
+        return hex(int(bin_str, 2))[2:].upper().zfill(16)  # Converts 64-bit binary string to uppercase hex (16 chars)
 
     def encrypt(self, hex_input: str) -> tuple[str, list[str], list[str]]:
         # 1) Convert hex input to binary and apply initial permutation
         binary = self.hex_to_bin(hex_input)
         binary = self.P_i.permutate(binary)
-    
+
         # 2) Preserve this for the round-1 split
         initial_binary = binary
-    
+
         # 3) Prepare results list
         round_results = []
-    
+
         # 4) Run all 16 rounds, but on idx 0 record detailed breakdown
         for idx, enc_round in enumerate(self.rounds):
             new_binary, _ = enc_round.encrypt(binary)
-    
+
             if idx == 0:
                 mixer = enc_round.mixer
                 # split into L0 / R0
@@ -47,7 +47,7 @@ class DES:
                 # expand R0 → 48 bits
                 Expand = mixer.initial_permutation.permutate(R0)
                 # XOR with the round key
-                XOR    = int_to_bin(
+                XOR = int_to_bin(
                     mixer.func(int(Expand, 2), mixer.key),
                     block_size=mixer.initial_permutation.out_degree
                 )
@@ -55,7 +55,7 @@ class DES:
                 sbox_out = ""
                 step = mixer.substitution_block_size
                 for i, box in enumerate(mixer.substitutions):
-                    chunk = XOR[i*step:(i+1)*step]
+                    chunk = XOR[i * step:(i + 1) * step]
                     res = box(chunk)
                     if not isinstance(res, str):
                         res = bin(res)[2:].zfill(4)
@@ -64,27 +64,26 @@ class DES:
                 P_Box = mixer.final_permutation.permutate(sbox_out)
                 # new left half L1 = L0 ⊕ P_Box
                 L1 = int_to_bin(int(L0, 2) ^ int(P_Box, 2), block_size=32)
-    
+
                 # collect everything into a dict
                 breakdown = {
-                    "L0":     L0,
-                    "R0":     R0,
+                    "L0": L0,
+                    "R0": R0,
                     "Expand": Expand,
-                    "XOR":    XOR,
-                    "S-Box":  sbox_out,
-                    "P-Box":  P_Box,
-                    "L1":     L1,
+                    "XOR": XOR,
+                    "S-Box": sbox_out,
+                    "P-Box": P_Box,
+                    "L1": L1,
                     "Combined (pre-swap)": L1 + R0
                 }
                 round_results.append(breakdown)
             else:
                 # all other rounds just store the 64-bit hex
                 round_results.append(self.bin_to_hex(new_binary))
-    
+
             # prepare for the next round
             binary = new_binary
-    
-        
+
         encrypted_binary = self.P_f.permutate(binary)
         return self.bin_to_hex(encrypted_binary), round_results, self.key_expansions
 
