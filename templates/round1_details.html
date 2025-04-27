@@ -1,5 +1,4 @@
 {% extends "base.html" %} {% block content %}
-
 <style>
   .key-grid {
     background: #f9f9f9;
@@ -14,6 +13,11 @@
   .key-grid div {
     margin: 0.35em 0;
     word-break: break-all;
+  }
+
+  .debug-output {
+    list-style: none;
+    padding-left: 0;
   }
 
   .debug-output li {
@@ -54,7 +58,6 @@
 <p><strong>Mode:</strong> {{ mode|title }}</p>
 
 <hr />
-
   <h4>Key Schedule • Round 1</h4>
   <div class="key-grid">
     <div>
@@ -89,15 +92,5 @@
     {% endfor %}
   </ul>
 </div>
-
-<h4 class="section-title">DES Operations - Round 1</h4>
-<ul class="debug-output">
-  {% for step, bits in round_data.items() %}
-  <li>
-    <strong>{{ step }}:</strong>
-    <code>{{ bits }}</code>
-  </li>
-  {% endfor %}
-</ul>
 
 {% endblock %}
