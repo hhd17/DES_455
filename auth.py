@@ -1,3 +1,4 @@
+# --- Imports --- #
 import os
 import re
 import uuid
@@ -14,32 +15,41 @@ from werkzeug.utils import secure_filename
 from extensions import db, bcrypt
 from models import User, History
 
+# --- Constants --- #
+# Regex to enforce strong password requirements
 PASSWORD_RE = re.compile(
     r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$'
 )
 
+# Directory settings for user avatars
 BASE_DIR = os.path.dirname(__file__)
 AVATAR_FOLDER = os.path.join(BASE_DIR, 'static', 'img', 'avatars')
 os.makedirs(AVATAR_FOLDER, exist_ok=True)
+
+# Allowed image extensions for avatar uploads
 ALLOWED_IMG = {'png', 'jpg', 'jpeg'}
 
-# Create a Flask Blueprint for authentication routes
+# --- Blueprint --- #
+# Create a Flask Blueprint for authentication-related routes
 auth_bp = Blueprint('auth', __name__)
 
 
-# Function to generate a JWT token
+# --- Helper Functions --- #
+# Function to generate JWT tokens for authentication
 def generate_token(username, user_id):
     payload = {
         'username': username,
         'user_id': user_id,
-        'exp': datetime.now(timezone.utc) + timedelta(hours=1)  # Token expires in 1 hour
+        'exp': datetime.now(timezone.utc) + timedelta(hours=1)  # Token expiration time
     }
     token = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
-    print('Generated Token:', token)  # Debug line to see token in console
+    print('Generated Token:', token)  # Debugging purpose
     return token
 
 
-# Register route (GET = show form, POST = handle form submission)
+# --- Routes --- #
+
+# User Registration: show form (GET) or process form (POST)
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -48,22 +58,16 @@ def register():
         password = request.form['password']
         confirm = request.form['confirm']
 
-        # username already taken? (case‑insensitive)
+        # Check if username is already taken (case-insensitive)
         if User.query.filter(func.lower(User.username) == username).first():
-            return render_template('register.html',
-                                   error='That username is already taken')
+            return render_template('register.html', error='That username is already taken')
 
-        # confirm password
+        # Check if passwords match
         if password != confirm:
-            return render_template('register.html',
-                                   error='Passwords do not match')
+            return render_template('register.html', error='Passwords do not match')
 
-        # strong‑password rule
-        strong = re.fullmatch(
-            r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$',
-            password
-        )
-        if not strong:
+        # Validate password strength
+        if not PASSWORD_RE.fullmatch(password):
             return render_template(
                 'register.html',
                 error=('Password must be at least 8 characters long and include '
@@ -71,11 +75,11 @@ def register():
                        'and one special character.')
             )
 
-        # existing user?
+        # Final username existence check (redundant safeguard)
         if User.query.filter_by(username=username).first():
             return render_template('register.html', error='User already exists')
 
-        # hash + create
+        # Hash password and create new user
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         default_avatar = 'static/img/avatars/default_avatar.png'
         db.session.add(User(username=username_raw,
@@ -85,10 +89,11 @@ def register():
 
         return redirect(url_for('auth.login'))
 
+    # Render registration page
     return render_template('register.html')
 
 
-# Login route (GET = form, POST = process login)
+# User Login: show form (GET) or process login (POST)
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -96,29 +101,31 @@ def login():
         username = data['username']
         password = data['password']
 
-        # Get user from database and check password
+        # Retrieve user and verify password
         user = User.query.filter(func.lower(User.username) == username.lower()).first()
         if not user or not bcrypt.check_password_hash(user.password, password):
             return render_template('login.html', error='Invalid credentials')
 
-        # Generate token and set it as cookie
+        # Generate token and set it in cookies
         token = generate_token(user.username, user.id)
         response = redirect(url_for('index'))
         response.set_cookie('token', token)
         response.set_cookie('username', username)
         return response
 
-    return render_template('login.html')  # Show login form
+    # Render login page
+    return render_template('login.html')
 
 
-# Logout route - clear the cookies
+# User Logout: clear authentication cookies
 @auth_bp.route('/logout')
 def logout():
-    response = make_response(render_template('index.html'))  # Return to home page
-    response.delete_cookie('token')  # Remove token cookie
+    response = make_response(render_template('index.html'))
+    response.delete_cookie('token')
     return response
 
 
+# Serve user avatar image file
 @auth_bp.route('/avatar/<int:user_id>')
 def avatar(user_id):
     user = User.query.get_or_404(user_id)
@@ -127,6 +134,7 @@ def avatar(user_id):
     return send_from_directory(folder, filename)
 
 
+# User Profile Page
 @auth_bp.route('/profile', methods=['GET'])
 def profile():
     token = request.cookies.get('token')
@@ -134,8 +142,7 @@ def profile():
         return redirect(url_for('auth.login'))
 
     try:
-        payload = jwt.decode(token, current_app.config['SECRET_KEY'],
-                             algorithms=['HS256'])
+        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
     except jwt.InvalidTokenError:
         flash('Please log in again.', 'error')
         resp = redirect(url_for('auth.login'))
@@ -152,6 +159,7 @@ def profile():
     return render_template('profile.html', user=user)
 
 
+# Update Username Route
 @auth_bp.route('/profile/update_username', methods=['POST'])
 def update_username():
     token = request.cookies.get('token')
@@ -164,23 +172,23 @@ def update_username():
     new_name_raw = request.form['new_username'].strip()
     new_name = new_name_raw.lower()
 
-    # already taken?
+    # Check if new username is already taken
     if User.query.filter(func.lower(User.username) == new_name).first():
         flash('Username is already in use.', 'error')
         return redirect(url_for('auth.profile'))
 
+    # Update username and reissue token
     user.username = new_name_raw
     db.session.commit()
 
     flash('Username updated.', 'success')
-
-    # re‑issue token with new username
     new_token = generate_token(user.username, user.id)
     resp = redirect(url_for('auth.profile'))
     resp.set_cookie('token', new_token)
     return resp
 
 
+# Update Avatar Route
 @auth_bp.route('/profile/update_avatar', methods=['POST'])
 def update_avatar():
     token = request.cookies.get('token')
@@ -200,17 +208,20 @@ def update_avatar():
         flash('Unsupported image type.', 'error')
         return redirect(url_for('auth.profile'))
 
+    # Save the uploaded file with a unique filename
     fname = secure_filename(f'user_{user.id}_{uuid.uuid4().hex[:8]}.{ext}')
-    rel_path = os.path.join('img', 'avatars', fname)  # stored in DB
+    rel_path = os.path.join('img', 'avatars', fname)  # Path stored in DB
     abs_path = os.path.join(AVATAR_FOLDER, fname)
 
     file.save(abs_path)
     user.avatar = rel_path
     db.session.commit()
+
     flash('Avatar updated.', 'success')
     return redirect(url_for('auth.profile'))
 
 
+# Update Password Route
 @auth_bp.route('/profile/update_password', methods=['POST'])
 def update_password():
     token = request.cookies.get('token')
@@ -223,22 +234,25 @@ def update_password():
     pwd = request.form['password']
     confirm = request.form['confirm']
 
+    # Validate password confirmation
     if pwd != confirm:
         flash('Passwords do not match.', 'error')
         return redirect(url_for('auth.profile'))
 
+    # Validate password strength
     if not PASSWORD_RE.fullmatch(pwd):
-        flash('Password must be at least 8 characters long and include '
-              'one uppercase, one lowercase, one digit, and one special character.',
-              'error')
+        flash('Password must meet complexity requirements.', 'error')
         return redirect(url_for('auth.profile'))
 
+    # Update password
     user.password = bcrypt.generate_password_hash(pwd).decode('utf-8')
     db.session.commit()
+
     flash('Password updated successfully.', 'success')
     return redirect(url_for('auth.profile'))
 
 
+# Delete Account Route
 @auth_bp.route('/profile/delete', methods=['POST'])
 def delete_account():
     token = request.cookies.get('token')
@@ -249,6 +263,7 @@ def delete_account():
     user = User.query.get(payload['user_id'])
 
     try:
+        # Delete user's history records and account
         History.query.filter_by(user_id=user.id).delete()
         db.session.delete(user)
         db.session.commit()
@@ -257,32 +272,29 @@ def delete_account():
         flash('Could not delete account, please try again.', 'error')
         return redirect(url_for('auth.profile'))
 
+    # Clear session after account deletion
     resp = redirect(url_for('index'))
     resp.delete_cookie('token')
     flash('Account deleted.', 'success')
     return resp
 
 
-# Route to fetch and display user encryption/decryption history
+# Fetch User Encryption/Decryption History
 @auth_bp.route('/history', methods=['GET'])
 def get_history():
-    # Get JWT token from cookies
     token = request.cookies.get("token")
     if not token:
         return redirect(url_for("auth.login"))
 
     try:
-        # Decode token to get user info
         payload = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
         user_id = payload["user_id"]
 
         if not user_id:
             return jsonify({'error': 'User not found'}), 404
 
-        # Fetch user's encryption/decryption history
+        # Fetch and render user's history records
         history = History.query.filter_by(user_id=user_id).all()
-
-        # Render history template with user's data
         return render_template('history.html', history=history)
 
     except jwt.ExpiredSignatureError:
